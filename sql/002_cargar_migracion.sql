@@ -77,10 +77,13 @@ select m.codigo, m.nombre,
     where coalesce(kp.nombre || ' > ', '') || k.nombre = m.categoria limit 1)
 from mig.productos m
 on conflict (codigo) do update set nombre = excluded.nombre, categoria_id = excluded.categoria_id;
-insert into variantes (producto_id, codigo, atributos, precio, costo, stock_minimo)
-select p.id, m.codigo, coalesce(m.atributos, '{}'), m.precio, m.costo, coalesce(m.stock_minimo, 0)
+insert into variantes (producto_id, codigo, atributos, precio, stock_minimo)
+select p.id, m.codigo, coalesce(m.atributos, '{}'), m.precio, coalesce(m.stock_minimo, 0)
 from mig.variantes m join productos p on p.codigo = m.producto_codigo
 on conflict (codigo) do update set precio = excluded.precio;
+insert into costos_variante (variante_id, costo)
+select v.id, m.costo from mig.variantes m join variantes v on v.codigo = m.codigo where m.costo is not null
+on conflict (variante_id) do update set costo = excluded.costo;
 
 -- ---------- ventas ----------
 insert into ventas (numero, fecha, canal_id, cliente_texto, total_lista, total, estado, origen, detalle_texto, observacion)
@@ -103,9 +106,9 @@ select v.id, mp.id, coalesce(m.monto, 0), coalesce(m.comision, 0), (m.fecha::tim
 from mig.pagos m join ventas v on v.numero = m.venta_numero join medios_pago mp on mp.nombre = m.medio_pago;
 
 -- ---------- facturas ----------
--- Emisores: completar CUIT y punto de venta reales antes de correr en producción.
+-- Emisores: CUIT y punto de venta con los que se factura hoy.
 insert into emisores (nombre, cuit, punto_venta) values
-  ('Joan', 'CUIT-JOAN', 2), ('Sele', 'CUIT-SELE', 8)
+  ('Joan', '20939674099', 2), ('Sele', '27358817446', 8)
 on conflict (nombre) do nothing;
 
 insert into facturas (venta_id, emisor_id, tipo, punto_venta, numero, fecha, importe, cae, cae_vto,

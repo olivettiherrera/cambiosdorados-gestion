@@ -5,6 +5,7 @@
 | Carpeta / archivo | Qué es |
 | --- | --- |
 | `sql/001_esquema.sql` | Todas las tablas, vistas y permisos. Se corre una vez en Supabase (SQL Editor). |
+| `sql/003_costos_aparte_y_permisos.sql` | Ajuste aplicado después: el costo en su propia tabla y las funciones de permisos en un esquema privado. |
 | `sql/002_cargar_migracion.sql` | Carga los CSV de `salida/` en las tablas. Se puede correr de nuevo: borra lo migrado y lo vuelve a cargar. |
 | `sql/000_stub_supabase_local.sql` | Solo para probar en un Postgres local. En Supabase **no** se corre. |
 | `migracion/migrar.py` | Lee las planillas exportadas y genera los CSV limpios. |
@@ -46,15 +47,20 @@ Ejemplo octubre 2026: facturable $15.662.858 · comisiones $358.393 · entró $1
 - Vendedores: "Cho" = Joan. Las ventas compartidas ("Sele/Mica") quedan asignadas a las dos.
 - Canal tomado de la columna Observación ("venta showroom" → Showroom, etc.).
 - Fechas sin año ("27/10") completadas con la columna AÑO.
-- Montos mal escritos ("18,216,90") corregidos; "600usd" y "100usd" quedan sin monto para revisar a mano.
+- Montos mal escritos ("18,216,90") corregidos. Las dos ventas de 2023 con precio en dólares ("600 usd", "100 usd") se toman por lo recibido en pesos.
 - 21 gastos del bot de Telegram que no estaban en Egresos se suman.
 - Facturas: 100 del Facturador (con CAE y PDF) + 290 anteriores tomadas de Compilado (sin CAE).
 
-## Para cargar en Supabase
+## Estado en Supabase
+
+Proyecto `cambiosdorados` (São Paulo), creado y cargado el 26/11/2026 con 001 y 003 y la migración completa.
+Los gastos de la cuenta CHO EXTRA no se cargan (decisión de Joan).
+
+## Para cargar en otro proyecto de Supabase
 
 1. Crear el proyecto en Supabase.
 2. SQL Editor → pegar y correr `sql/001_esquema.sql`.
-3. Completar en `sql/002_cargar_migracion.sql` el CUIT y punto de venta reales de Joan y Sele (buscar `CUIT-JOAN`).
+3. Correr `sql/003_costos_aparte_y_permisos.sql`.
 4. Desde esta carpeta: `cd salida && psql "<cadena de conexión de Supabase>" -v ON_ERROR_STOP=1 -f ../sql/002_cargar_migracion.sql`
 5. Crear los usuarios de Joan, Sele y Mica en Authentication y sus filas en `perfiles` con el rol.
 
