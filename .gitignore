@@ -1,0 +1,6 @@
+# Datos reales de clientes y ventas: no se suben. Se regeneran con migracion/migrar.py
+salida/
+__pycache__/
+*.pyc
+.env
+.env.*
