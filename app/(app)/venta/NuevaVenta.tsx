@@ -12,7 +12,7 @@ type FilaCatalogo = {
   variante_id: number; codigo: string; atributos: Record<string, string>; precio: number | null; stock: number
 }
 type Producto = { id: number; nombre: string; categoria: string | null; en_web: boolean; variantes: FilaCatalogo[] }
-type Renglon = { variante_id: number; descripcion: string; precio: number; cantidad: number }
+type Renglon = { variante_id: number; descripcion: string; precio: number; precioBase: number; cantidad: number }
 type Resultado = { numero: string; total_lista: number; descuento: number; total: number; comision: number; neto: number }
 
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
@@ -35,6 +35,15 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
   const [hecho, setHecho] = useState<Resultado | null>(null)
   const buscador = useRef<HTMLInputElement>(null)
   const [altaNueva, setAltaNueva] = useState<string | null>(null)
+  const [totalManual, setTotalManual] = useState('')
+  // Si cambia el carrito o el medio de pago, el redondeo anterior ya no vale
+  useEffect(() => { setTotalManual('') }, [renglones, medioId])
+  const cambiarPrecio = (id: number, valor: string) => {
+    const n = Number(valor.replace(/\./g, '').replace(',', '.')) || 0
+    setRenglones((rs) => rs.map((r) => (r.variante_id === id ? { ...r, precio: n } : r)))
+  }
+  const redondear = (paso: number) => setTotalManual(String(Math.floor(totalCalculadoRef.current / paso) * paso))
+  const totalCalculadoRef = useRef(0)
 
   // Búsqueda con una pequeña espera mientras se escribe
   useEffect(() => {
@@ -65,18 +74,22 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
   const medio = medios.find((m) => m.id === medioId)
   const lista = renglones.reduce((s, r) => s + r.precio * r.cantidad, 0)
   const descuento = Math.round(lista * (medio?.descuento_pct ?? 0)) / 100
-  const total = lista - descuento
+  const totalCalculado = lista - descuento
+  const totalManualNum = Number(totalManual.replace(/\./g, '').replace(',', '.')) || 0
+  const total = totalManual ? totalManualNum : totalCalculado
+  const ajuste = totalManual ? totalManualNum - totalCalculado : 0
   const comision = Math.round(total * (medio?.comision_pct ?? 0)) / 100
+  const sinPrecio = renglones.some((r) => !(r.precio > 0))
+  totalCalculadoRef.current = totalCalculado
   const unidades = renglones.reduce((s, r) => s + r.cantidad, 0)
 
   function agregar(v: FilaCatalogo, nombre: string) {
-    if (v.precio == null) return
     setHecho(null)
     setRenglones((rs) => {
       const i = rs.findIndex((r) => r.variante_id === v.variante_id)
       if (i >= 0) return rs.map((r, j) => (j === i ? { ...r, cantidad: r.cantidad + 1 } : r))
       const variante = descripcionVariante(v.atributos)
-      return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio), cantidad: 1 }]
+      return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio ?? 0), precioBase: Number(v.precio ?? 0), cantidad: 1 }]
     })
   }
   // Producto elegido entre los parecidos o recién creado
@@ -94,11 +107,14 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
     setError('')
     if (renglones.length === 0) return setError('Agregá al menos un producto.')
     if (vendedorIds.length === 0) return setError('Elegí quién vendió.')
+    if (sinPrecio) return setError('Hay productos sin precio: escribilo en el renglón.')
+    if (totalManual && !(totalManualNum > 0)) return setError('El total redondeado no es válido.')
     setGuardando(true)
     const { data, error } = await supabase.rpc('registrar_venta', {
       p: {
         canal_id: canalId, medio_pago_id: medioId, cliente_texto: cliente.trim() || null, vendedor_ids: vendedorIds,
-        items: renglones.map((r) => ({ variante_id: r.variante_id, cantidad: r.cantidad })),
+        items: renglones.map((r) => ({ variante_id: r.variante_id, cantidad: r.cantidad, ...(r.precio !== r.precioBase ? { precio: r.precio } : {}) })),
+        ...(totalManual ? { total_final: totalManualNum } : {}),
       },
     })
     setGuardando(false)
@@ -173,13 +189,24 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
             {renglones.length === 0 && <div className="muted" style={{ padding: '16px 0' }}>Buscá un producto y agregalo.</div>}
             {renglones.map((r, i) => (
               <div key={r.variante_id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: i < renglones.length - 1 ? '1px solid var(--linea)' : 0 }}>
-                <div style={{ flex: 1, minWidth: 0, fontWeight: 500 }}>{r.descripcion}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 500 }}>{r.descripcion}</div>
+                  {!(r.precio > 0) && <div className="small error">Sin precio: escribilo</div>}
+                  {r.precio > 0 && r.precioBase > 0 && r.precio !== r.precioBase && <div className="small muted">Lista {pesos(r.precioBase)} · cambiado a mano</div>}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--borde)' }}>
                   <button aria-label={'Restar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, -1)} style={{ width: 32, height: 32, border: 0, background: '#fff' }}>−</button>
                   <span style={{ width: 28, textAlign: 'center' }}>{r.cantidad}</span>
                   <button aria-label={'Sumar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, 1)} style={{ width: 32, height: 32, border: 0, background: '#fff' }}>+</button>
                 </div>
-                <div style={{ width: 90, textAlign: 'right', fontWeight: 500 }}>{pesos(r.precio * r.cantidad)}</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: `1px solid ${r.precio > 0 ? 'var(--borde)' : 'var(--error)'}`, padding: '0 8px', height: 34, width: 112, background: '#fff' }}
+                  title={r.precioBase > 0 ? `Precio de lista: ${pesos(r.precioBase)}` : 'Este producto no tiene precio cargado'}>
+                  <span className="muted small">$</span>
+                  <input aria-label={'Precio unitario de ' + r.descripcion} inputMode="decimal" placeholder="precio"
+                    value={r.precio > 0 ? r.precio.toLocaleString('es-AR') : ''} onChange={(e) => cambiarPrecio(r.variante_id, e.target.value)}
+                    style={{ border: 0, outline: 'none', width: '100%', textAlign: 'right', fontWeight: 500, background: 'transparent' }} />
+                </label>
+                <div style={{ width: 90, textAlign: 'right', fontWeight: 500 }}>{r.cantidad > 1 ? pesos(r.precio * r.cantidad) : ''}</div>
               </div>
             ))}
           </div>
@@ -218,6 +245,26 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
             {descuento > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ok)' }}>
                 <span>{medio?.descuento_pct}% off por {medio?.nombre.toLowerCase()}</span><span>− {pesos(descuento)}</span>
+              </div>
+            )}
+            {renglones.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} className="small">
+                <span className="muted" style={{ marginRight: 'auto' }}>Redondear</span>
+                <button type="button" className="chip" onClick={() => redondear(100)}>a $100</button>
+                <button type="button" className="chip" onClick={() => redondear(500)}>a $500</button>
+                <button type="button" className="chip" onClick={() => redondear(1000)}>a $1.000</button>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: '1px solid var(--borde)', padding: '0 8px', height: 34, width: 120, background: '#fff' }}>
+                  <span className="muted">$</span>
+                  <input aria-label="Total a mano" inputMode="decimal" placeholder="a mano" value={totalManual ? totalManualNum.toLocaleString('es-AR') : ''}
+                    onChange={(e) => setTotalManual(e.target.value.replace(/\D/g, ''))}
+                    style={{ border: 0, outline: 'none', width: '100%', textAlign: 'right', background: 'transparent' }} />
+                </label>
+                {totalManual && <button type="button" className="chip" onClick={() => setTotalManual('')}>Quitar</button>}
+              </div>
+            )}
+            {ajuste !== 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between' }} className="muted">
+                <span>Redondeo</span><span>{ajuste > 0 ? '+ ' : '− '}{pesos(Math.abs(ajuste))}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 6 }}>
