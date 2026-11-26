@@ -305,7 +305,7 @@ function TarjetaProducto({ producto, onAgregar }: { producto: Producto; onAgrega
             <div className="small muted">{[producto.categoria, producto.en_web ? 'En la web' : 'Solo en el local'].filter(Boolean).join(' · ')}</div>
           </div>
           <div style={{ fontWeight: 600, fontSize: 16 }}>
-            {elegida?.precio != null ? pesos(Number(elegida.precio)) : precios.length ? 'desde ' + pesos(Math.min(...precios)) : 'Sin precio'}
+            {elegida && Number(elegida.precio) > 0 ? pesos(Number(elegida.precio)) : elegida ? <span className="small" style={{ color: 'var(--alerta)', fontWeight: 500 }}>Sin precio · se escribe en la venta</span> : precios.length ? 'desde ' + pesos(Math.min(...precios)) : 'Sin precio'}
           </div>
         </div>
         {claves.map((k) => {
@@ -324,7 +324,8 @@ function TarjetaProducto({ producto, onAgregar }: { producto: Producto; onAgrega
           <span className="small" style={{ color: elegida && elegida.stock > 0 ? 'var(--ok)' : 'var(--apagado)' }}>
             {!elegida ? 'Esa combinación no existe' : elegida.stock > 0 ? `${elegida.stock} en el local` : 'Stock sin contar'}
           </span>
-          <button className="boton" type="button" disabled={!elegida || elegida.precio == null}
+          <button className="boton" type="button" disabled={!elegida}
+            title={elegida && !(Number(elegida.precio) > 0) ? 'Sin precio cargado: lo escribís en la venta' : undefined}
             onClick={() => elegida && onAgregar(elegida, producto.nombre)}>Agregar a la venta</button>
         </div>
       </div>

@@ -41,7 +41,7 @@ function FilaSugerida({ f, onAgregar }: { f: FilaParecida; onAgregar: (f: FilaPa
         <div className="small muted">{f.codigo}{f.categoria ? ` · ${f.categoria}` : ''} · stock {f.stock}{f.motivo ? ` · ${f.motivo}` : ''}</div>
       </div>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{f.precio ? pesos(f.precio) : <span className="muted small">sin precio</span>}</span>
-      <button className="boton-sec" disabled={!f.precio} onClick={() => onAgregar(f)}>Agregar</button>
+      <button className="boton-sec" onClick={() => onAgregar(f)}>Agregar</button>
     </div>
   )
 }

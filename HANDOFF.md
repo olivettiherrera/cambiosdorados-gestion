@@ -21,6 +21,7 @@ Gastos, Tablero y Facturación son solo admin (RLS + menú).
 - Modelo de cobro: `pagos.monto` (se factura) / `comision` (~15% Getnet, MP, Nave) / `neto` (lo que entra). Descuento 15% en efectivo y transferencias.
 - Pantallas: Login, **Nueva venta** (RPC `registrar_venta`), **Ventas** (filtros, totales, detalle, anular, CSV), **Caja del día** (`resumen_caja`, `cerrar_caja`).
 - **Alta rápida de producto** desde la venta: `buscar_parecidos(texto, precio)` (pg_trgm + unaccent, nombre + precio ±25%) y `crear_producto_rapido` (queda `productos.revisar = true`).
+- **Precio a mano y redondeo** (como en la planilla): cada renglón de la venta tiene el precio editable; si el producto no tiene precio sale en rojo "Sin precio: escribilo" y no deja confirmar. Botones para redondear el total para abajo a $100 / $500 / $1.000 o escribirlo a mano; queda como renglón "Redondeo" y en la observación de la venta. `registrar_venta` acepta `items[].precio` y `total_final` (sql/004, aplicado). Los productos sin precio se pueden agregar a la venta (antes el botón quedaba bloqueado).
 - SQL en `sql/001`…`007` (todo aplicado en Supabase).
 
 ## Pendiente de Joan
