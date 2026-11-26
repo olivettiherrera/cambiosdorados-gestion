@@ -124,11 +124,20 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
 
   const hoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
+  const agregarYSeguir = (v: FilaCatalogo, nombre: string) => {
+    agregar(v, nombre); setBusqueda(''); setProductos([]); buscador.current?.focus()
+  }
+  const hayResultados = busqueda.trim().length >= 2 && altaNueva === null
+  const celda: React.CSSProperties = { padding: '12px 10px', verticalAlign: 'middle' }
+
   return (
     <>
-      <header>
-        <h1>Nueva venta</h1>
-        <div className="muted" style={{ marginTop: 6, textTransform: 'none' }}>{hoy.charAt(0).toUpperCase() + hoy.slice(1)}</div>
+      <header style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <h1>Nueva venta</h1>
+          <div className="muted" style={{ marginTop: 6 }}>{hoy.charAt(0).toUpperCase() + hoy.slice(1)}</div>
+        </div>
+        <a href="/caja" className="boton-sec">Caja del día</a>
       </header>
 
       {hecho && (
@@ -139,138 +148,148 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
-        <section aria-label="Productos" style={{ flex: '3 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', border: '1px solid var(--borde)', padding: '0 16px', height: 52 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
-            <span className="oculto">Buscar producto</span>
-            <input ref={buscador} autoFocus value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Florero, difusor, 000412…" style={{ flex: 1, border: 0, outline: 'none', fontSize: 16, background: 'transparent' }} />
-            <span className="small muted">{buscando ? 'Buscando…' : 'por nombre o código'}</span>
-          </label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(340px, 400px)', gap: 24, alignItems: 'start' }} className="grilla-venta">
+        {/* Columna izquierda: buscar y los productos de la venta */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+          <div style={{ position: 'relative' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', border: '1px solid var(--borde)', padding: '0 16px', height: 52 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+              <span className="oculto">Buscar producto</span>
+              <input ref={buscador} autoFocus value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+                onKeyDown={(e) => e.key === 'Escape' && setBusqueda('')}
+                placeholder="Buscá un producto: florero, difusor, 000412…" style={{ flex: 1, border: 0, outline: 'none', fontSize: 16, background: 'transparent' }} />
+              <span className="small muted">{buscando ? 'Buscando…' : 'por nombre o código'}</span>
+            </label>
 
-          {altaNueva !== null ? (
-            <ProductoNuevo key={altaNueva} nombreInicial={altaNueva} categorias={categorias}
-              onListo={agregarParecido} onCancelar={() => setAltaNueva(null)} />
-          ) : (
-            <>
-              {busqueda.trim().length >= 2 && !buscando && productos.length === 0 && (
-                <div className="panel">
-                  <div style={{ padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                    <span className="muted">No encontré productos con “{busqueda.trim()}”.</span>
-                    <button className="boton" onClick={() => setAltaNueva(busqueda.trim())}>Cargar producto nuevo</button>
-                  </div>
-                  <QuisisteDecir texto={busqueda.trim()} onAgregar={agregarParecido} />
-                </div>
-              )}
-
-              {productos.length > 0 && (
-                <div className="panel">
-                  {productos.map((p) => <TarjetaProducto key={p.id} producto={p} onAgregar={agregar} />)}
-                  <div style={{ padding: '12px 20px', borderTop: '1px solid var(--linea)' }} className="small">
-                    <span className="muted">¿No es ninguno? </span>
-                    <button onClick={() => setAltaNueva(busqueda.trim())} style={{ border: 0, background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--dorado-texto)' }}>Cargar producto nuevo</button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
-        <section aria-label="Venta en curso" className="panel" style={{ flex: '2 1 380px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--linea)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <h2>Venta en curso</h2>
-            <span className="muted" style={{ fontSize: 13 }}>{unidades} {unidades === 1 ? 'producto' : 'productos'}</span>
-          </div>
-
-          <div style={{ padding: '8px 24px' }}>
-            {renglones.length === 0 && <div className="muted" style={{ padding: '16px 0' }}>Buscá un producto y agregalo.</div>}
-            {renglones.map((r, i) => (
-              <div key={r.variante_id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 0', borderBottom: i < renglones.length - 1 ? '1px solid var(--linea)' : 0 }}>
-                <div style={{ fontWeight: 500, lineHeight: 1.35 }}>{r.descripcion}</div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--borde)' }}>
-                    <button aria-label={'Restar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, -1)} style={{ width: 32, height: 34, border: 0, background: '#fff' }}>−</button>
-                    <span style={{ width: 28, textAlign: 'center' }}>{r.cantidad}</span>
-                    <button aria-label={'Sumar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, 1)} style={{ width: 32, height: 34, border: 0, background: '#fff' }}>+</button>
-                  </div>
-                  <span className="small muted">×</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: `1px solid ${r.precio > 0 ? 'var(--borde)' : 'var(--error)'}`, padding: '0 8px', height: 36, width: 130, background: '#fff' }}
-                    title={r.precioBase > 0 ? `Precio de lista: ${pesos(r.precioBase)}` : 'Este producto no tiene precio cargado'}>
-                    <span className="muted small">$</span>
-                    <input aria-label={'Precio unitario de ' + r.descripcion} inputMode="decimal" placeholder="escribí el precio"
-                      value={r.precio > 0 ? r.precio.toLocaleString('es-AR') : ''} onChange={(e) => cambiarPrecio(r.variante_id, e.target.value)}
-                      style={{ border: 0, outline: 'none', width: '100%', textAlign: 'right', fontWeight: 500, background: 'transparent' }} />
-                  </label>
-                  <div style={{ marginLeft: 'auto', textAlign: 'right', fontWeight: 600 }}>{r.precio > 0 ? pesos(r.precio * r.cantidad) : '—'}</div>
-                </div>
-                {(!(r.precio > 0) || (r.precioBase > 0 && r.precio !== r.precioBase) || r.stock < r.cantidad) && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {!(r.precio > 0) && <span className="small" style={{ color: 'var(--error)', background: '#FBEFEC', padding: '2px 8px' }}>Sin precio: escribilo</span>}
-                    {r.precio > 0 && r.precioBase > 0 && r.precio !== r.precioBase && <span className="small muted" style={{ background: 'var(--fondo)', padding: '2px 8px' }}>Lista {pesos(r.precioBase)} · cambiado a mano</span>}
-                    {r.stock < r.cantidad && <span className="small" style={{ color: 'var(--alerta)', background: '#FBF5EC', padding: '2px 8px' }} title="Se vende igual; a Joan y Sele les queda el aviso para cargar el stock">Sin stock en el sistema · queda aviso</span>}
-                  </div>
+            {hayResultados && !buscando && (
+              <div className="panel" style={{ position: 'absolute', left: 0, right: 0, top: 56, zIndex: 10, maxHeight: '62vh', overflowY: 'auto', boxShadow: '0 12px 32px rgba(0,0,0,.10)' }}>
+                {productos.length === 0 ? (
+                  <>
+                    <div style={{ padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                      <span className="muted">No encontré productos con “{busqueda.trim()}”.</span>
+                      <button className="boton" onClick={() => setAltaNueva(busqueda.trim())}>Cargar producto nuevo</button>
+                    </div>
+                    <QuisisteDecir texto={busqueda.trim()} onAgregar={agregarParecido} />
+                  </>
+                ) : (
+                  <>
+                    {productos.map((p) => <TarjetaProducto key={p.id} producto={p} onAgregar={agregarYSeguir} />)}
+                    <div style={{ padding: '12px 20px' }} className="small">
+                      <span className="muted">¿No es ninguno? </span>
+                      <button onClick={() => setAltaNueva(busqueda.trim())} style={{ border: 0, background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--dorado-texto)' }}>Cargar producto nuevo</button>
+                    </div>
+                  </>
                 )}
               </div>
-            ))}
+            )}
           </div>
 
-          <div style={{ padding: '16px 24px', background: 'var(--fondo)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <label className="etiqueta">Medio de pago
-                <select className="campo" value={medioId} onChange={(e) => setMedioId(Number(e.target.value))}>
-                  {medios.map((m) => <option key={m.id} value={m.id}>{m.nombre}{m.descuento_pct > 0 ? ` (${m.descuento_pct}% off)` : ''}</option>)}
-                </select>
-              </label>
-              <label className="etiqueta">Canal
-                <select className="campo" value={canalId} onChange={(e) => setCanalId(Number(e.target.value))}>
-                  {canales.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              </label>
-              <label className="etiqueta">Vendió
-                <select className="campo" value={vendedorIds[0] ?? ''} onChange={(e) => {
-                  const id = Number(e.target.value)
-                  setVendedorIds((vs) => (id ? [id, ...vs.slice(1).filter((x) => x !== id)] : vs.slice(1)))
-                }}>
-                  <option value="">Elegí…</option>
-                  {vendedores.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
-                </select>
-              </label>
-              <label className="etiqueta">Compartida con (opcional)
-                <select className="campo" value={vendedorIds[1] ?? ''} onChange={(e) => {
-                  const id = Number(e.target.value)
-                  setVendedorIds((vs) => (vs[0] ? (id && id !== vs[0] ? [vs[0], id] : [vs[0]]) : vs))
-                }} disabled={!vendedorIds[0]}>
-                  <option value="">Nadie</option>
-                  {vendedores.filter((v) => v.id !== vendedorIds[0]).map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
-                </select>
-              </label>
-              <label className="etiqueta" style={{ gridColumn: '1 / -1' }}>Cliente (opcional)
-                <input className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre" />
-              </label>
+          {altaNueva !== null && (
+            <ProductoNuevo key={altaNueva} nombreInicial={altaNueva} categorias={categorias}
+              onListo={agregarParecido} onCancelar={() => setAltaNueva(null)} />
+          )}
+
+          <section aria-label="Productos de la venta" className="panel">
+            <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--linea)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <h2>Venta en curso</h2>
+              <span className="muted" style={{ fontSize: 13 }}>{unidades} {unidades === 1 ? 'producto' : 'productos'}</span>
             </div>
+            {renglones.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center' }} className="muted">
+                Todavía no hay productos. Buscalos arriba y tocá <b>Agregar a la venta</b>.
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--tinta-suave)', fontSize: 12 }}>
+                    <th style={{ ...celda, paddingLeft: 20, fontWeight: 500 }}>Producto</th>
+                    <th style={{ ...celda, fontWeight: 500, width: 110 }}>Cantidad</th>
+                    <th style={{ ...celda, fontWeight: 500, width: 150 }}>Precio unitario</th>
+                    <th style={{ ...celda, fontWeight: 500, width: 110, textAlign: 'right', paddingRight: 20 }}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {renglones.map((r) => (
+                    <tr key={r.variante_id} style={{ borderTop: '1px solid var(--linea)' }}>
+                      <td style={{ ...celda, paddingLeft: 20 }}>
+                        <div style={{ fontWeight: 500, lineHeight: 1.35 }}>{r.descripcion}</div>
+                        {(!(r.precio > 0) || (r.precioBase > 0 && r.precio !== r.precioBase) || r.stock < r.cantidad) && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                            {!(r.precio > 0) && <span className="small" style={{ color: 'var(--error)', background: '#FBEFEC', padding: '2px 8px' }}>Sin precio: escribilo</span>}
+                            {r.precio > 0 && r.precioBase > 0 && r.precio !== r.precioBase && <span className="small muted" style={{ background: 'var(--fondo)', padding: '2px 8px' }}>Lista {pesos(r.precioBase)} · cambiado a mano</span>}
+                            {r.stock < r.cantidad && <span className="small" style={{ color: 'var(--alerta)', background: '#FBF5EC', padding: '2px 8px' }} title="Se vende igual; a Joan y Sele les queda el aviso para cargar el stock">Sin stock en el sistema · queda aviso</span>}
+                          </div>
+                        )}
+                      </td>
+                      <td style={celda}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--borde)' }}>
+                          <button aria-label={'Restar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, -1)} style={{ width: 30, height: 34, border: 0, background: '#fff' }}>−</button>
+                          <span style={{ width: 26, textAlign: 'center' }}>{r.cantidad}</span>
+                          <button aria-label={'Sumar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, 1)} style={{ width: 30, height: 34, border: 0, background: '#fff' }}>+</button>
+                        </div>
+                      </td>
+                      <td style={celda}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: `1px solid ${r.precio > 0 ? 'var(--borde)' : 'var(--error)'}`, padding: '0 8px', height: 36, background: '#fff' }}
+                          title={r.precioBase > 0 ? `Precio de lista: ${pesos(r.precioBase)}` : 'Este producto no tiene precio cargado'}>
+                          <span className="muted small">$</span>
+                          <input aria-label={'Precio unitario de ' + r.descripcion} inputMode="decimal" placeholder="escribilo"
+                            value={r.precio > 0 ? r.precio.toLocaleString('es-AR') : ''} onChange={(e) => cambiarPrecio(r.variante_id, e.target.value)}
+                            style={{ border: 0, outline: 'none', width: '100%', minWidth: 0, textAlign: 'right', fontWeight: 500, background: 'transparent' }} />
+                        </label>
+                      </td>
+                      <td style={{ ...celda, textAlign: 'right', paddingRight: 20, fontWeight: 600, whiteSpace: 'nowrap' }}>{r.precio > 0 ? pesos(r.precio * r.cantidad) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        </div>
+
+        {/* Columna derecha: cobro, siempre a la vista */}
+        <section aria-label="Cobro" className="panel" style={{ position: 'sticky', top: 16, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--linea)' }}>
+            <h2>Cobro</h2>
+          </div>
+          <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <label className="etiqueta" style={{ gridColumn: '1 / -1' }}>Medio de pago
+              <select className="campo" value={medioId} onChange={(e) => setMedioId(Number(e.target.value))}>
+                {medios.map((m) => <option key={m.id} value={m.id}>{m.nombre}{m.descuento_pct > 0 ? ` (${m.descuento_pct}% off)` : ''}</option>)}
+              </select>
+            </label>
+            <label className="etiqueta">Vendió
+              <select className="campo" value={vendedorIds[0] ?? ''} onChange={(e) => {
+                const id = Number(e.target.value)
+                setVendedorIds((vs) => (id ? [id, ...vs.slice(1).filter((x) => x !== id)] : vs.slice(1)))
+              }}>
+                <option value="">Elegí…</option>
+                {vendedores.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+              </select>
+            </label>
+            <label className="etiqueta">Junto con
+              <select className="campo" value={vendedorIds[1] ?? ''} disabled={!vendedorIds[0]} onChange={(e) => {
+                const id = Number(e.target.value)
+                setVendedorIds((vs) => (vs[0] ? (id && id !== vs[0] ? [vs[0], id] : [vs[0]]) : vs))
+              }}>
+                <option value="">Nadie</option>
+                {vendedores.filter((v) => v.id !== vendedorIds[0]).map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+              </select>
+            </label>
+            <label className="etiqueta">Canal
+              <select className="campo" value={canalId} onChange={(e) => setCanalId(Number(e.target.value))}>
+                {canales.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </label>
+            <label className="etiqueta">Cliente (opcional)
+              <input className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre" />
+            </label>
           </div>
 
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--linea)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }} className="muted"><span>Subtotal (precio de lista)</span><span>{pesos(lista)}</span></div>
+          <div style={{ padding: '16px 20px', background: 'var(--fondo)', borderTop: '1px solid var(--linea)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }} className="muted"><span>Subtotal</span><span>{pesos(lista)}</span></div>
             {descuento > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ok)' }}>
-                <span>{medio?.descuento_pct}% off por {medio?.nombre.toLowerCase()}</span><span>− {pesos(descuento)}</span>
-              </div>
-            )}
-            {renglones.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }} className="small">
-                <span className="muted" style={{ marginRight: 'auto' }}>Redondear</span>
-                <button type="button" className="chip" onClick={() => redondear(100)}>a $100</button>
-                <button type="button" className="chip" onClick={() => redondear(500)}>a $500</button>
-                <button type="button" className="chip" onClick={() => redondear(1000)}>a $1.000</button>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: '1px solid var(--borde)', padding: '0 8px', height: 34, width: 120, background: '#fff' }}>
-                  <span className="muted">$</span>
-                  <input aria-label="Total a mano" inputMode="decimal" placeholder="a mano" value={totalManual ? totalManualNum.toLocaleString('es-AR') : ''}
-                    onChange={(e) => setTotalManual(e.target.value.replace(/\D/g, ''))}
-                    style={{ border: 0, outline: 'none', width: '100%', textAlign: 'right', background: 'transparent' }} />
-                </label>
-                {totalManual && <button type="button" className="chip" onClick={() => setTotalManual('')}>Quitar</button>}
+                <span>{medio?.descuento_pct}% off {medio?.nombre.toLowerCase()}</span><span>− {pesos(descuento)}</span>
               </div>
             )}
             {ajuste !== 0 && (
@@ -278,13 +297,28 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
                 <span>Redondeo</span><span>{ajuste > 0 ? '+ ' : '− '}{pesos(Math.abs(ajuste))}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 6 }}>
-              <span style={{ fontWeight: 600, fontSize: 16 }}>Total a cobrar</span>
-              <span style={{ fontFamily: 'var(--titulos)', fontSize: 34 }}>{pesos(total)}</span>
+            {renglones.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} className="small">
+                <span className="muted" style={{ marginRight: 'auto' }}>Redondear</span>
+                {[100, 500, 1000].map((p) => (
+                  <button key={p} type="button" className="chip" style={{ padding: '5px 9px' }} onClick={() => redondear(p)}>{p === 1000 ? '$1.000' : '$' + p}</button>
+                ))}
+                {totalManual && <button type="button" className="chip" style={{ padding: '5px 9px' }} onClick={() => setTotalManual('')}>Quitar</button>}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, gap: 12 }}>
+              <span style={{ fontWeight: 600, fontSize: 16 }}>Total</span>
+              <label style={{ display: 'flex', alignItems: 'baseline', gap: 4, borderBottom: '1px dashed var(--borde)' }} title="Podés escribir el total a mano">
+                <span style={{ fontFamily: 'var(--titulos)', fontSize: 30 }}>$</span>
+                <input aria-label="Total a cobrar (se puede escribir a mano)" inputMode="numeric"
+                  value={totalManual ? totalManualNum.toLocaleString('es-AR') : Math.round(totalCalculado).toLocaleString('es-AR')}
+                  onChange={(e) => setTotalManual(e.target.value.replace(/\D/g, ''))}
+                  style={{ border: 0, outline: 'none', background: 'transparent', fontFamily: 'var(--titulos)', fontSize: 30, textAlign: 'right', width: 170 }} />
+              </label>
             </div>
-            {comision > 0 && <div className="small muted" style={{ textAlign: 'right' }}>Entra aprox. {pesos(total - comision)} después de la comisión de {medio?.nombre}</div>}
+            {comision > 0 && <div className="small muted" style={{ textAlign: 'right' }}>Entra aprox. {pesos(total - comision)} después de la comisión</div>}
             {error && <div role="alert" style={{ color: 'var(--error)', fontSize: 13 }}>{error}</div>}
-            <button className="boton" style={{ marginTop: 10, height: 52, fontSize: 16 }} onClick={confirmar} disabled={guardando || renglones.length === 0}>
+            <button className="boton" style={{ marginTop: 8, height: 52, fontSize: 16 }} onClick={confirmar} disabled={guardando || renglones.length === 0}>
               {guardando ? 'Guardando…' : 'Confirmar venta'}
             </button>
             <div className="small muted" style={{ textAlign: 'center' }}>Se factura después, desde Facturación</div>
