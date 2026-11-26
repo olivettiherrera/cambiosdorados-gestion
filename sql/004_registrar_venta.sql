@@ -34,6 +34,7 @@ declare
   v_factor     numeric;
   v_precio     numeric;
   v_ajuste     numeric := 0;
+  v_stock      int;
 begin
   if not privado.es_usuario() then
     raise exception 'Usuario sin permiso para vender';
@@ -100,6 +101,17 @@ begin
             v_var.nombre || coalesce(' · ' || nullif((select string_agg(value, ' · ') from jsonb_each_text(v_var.atributos)), ''), ''),
             v_cant, v_precio * v_cant, round(v_precio * v_cant * v_factor, 2))
     returning id into v_item_id;
+
+    -- Avisos para completar después (sql/008): vendido sin stock en el sistema, o con precio escrito a mano
+    select coalesce(sum(cantidad), 0) into v_stock from movimientos_stock where variante_id = v_var.id;
+    if v_stock < v_cant then
+      perform privado.anotar_pendiente('sin_stock', v_var.id, v_venta_id,
+        'Venta ' || v_numero || ': se vendieron ' || v_cant || ' y el sistema tenía ' || v_stock);
+    end if;
+    if v_var.precio is null or v_var.precio <= 0 then
+      perform privado.anotar_pendiente('sin_precio', v_var.id, v_venta_id,
+        'Venta ' || v_numero || ': se cobró $ ' || round(v_precio)::text || ' escrito a mano');
+    end if;
 
     insert into movimientos_stock (variante_id, cantidad, motivo, venta_item_id, usuario_id)
     values (v_var.id, -v_cant, 'venta', v_item_id, auth.uid());

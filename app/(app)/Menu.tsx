@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SECCIONES } from './secciones'
 
-export default function Menu({ nombre, rol }: { nombre: string; rol: 'admin' | 'vendedor' }) {
+export default function Menu({ nombre, rol, avisos = 0 }: { nombre: string; rol: 'admin' | 'vendedor'; avisos?: number }) {
   const ruta = usePathname()
   const visibles = SECCIONES.filter((s) => !s.soloAdmin || rol === 'admin')
   const generales = visibles.filter((s) => !['gastos', 'tablero'].includes(s.ruta))
@@ -20,6 +20,9 @@ export default function Menu({ nombre, rol }: { nombre: string; rol: 'admin' | '
           borderLeft: activa ? '3px solid var(--dorado)' : '0', fontWeight: activa ? 500 : 400,
         }}>
         {s.nombre}
+        {s.ruta === 'productos' && avisos > 0 && (
+          <span aria-label={avisos + ' para revisar'} style={{ marginLeft: 8, background: 'var(--dorado)', color: 'var(--tinta)', borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>{avisos}</span>
+        )}
       </Link>
     )
   }

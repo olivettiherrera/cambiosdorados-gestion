@@ -12,7 +12,7 @@ type FilaCatalogo = {
   variante_id: number; codigo: string; atributos: Record<string, string>; precio: number | null; stock: number
 }
 type Producto = { id: number; nombre: string; categoria: string | null; en_web: boolean; variantes: FilaCatalogo[] }
-type Renglon = { variante_id: number; descripcion: string; precio: number; precioBase: number; cantidad: number }
+type Renglon = { variante_id: number; descripcion: string; precio: number; precioBase: number; cantidad: number; stock: number }
 type Resultado = { numero: string; total_lista: number; descuento: number; total: number; comision: number; neto: number }
 
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
@@ -89,7 +89,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
       const i = rs.findIndex((r) => r.variante_id === v.variante_id)
       if (i >= 0) return rs.map((r, j) => (j === i ? { ...r, cantidad: r.cantidad + 1 } : r))
       const variante = descripcionVariante(v.atributos)
-      return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio ?? 0), precioBase: Number(v.precio ?? 0), cantidad: 1 }]
+      return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio ?? 0), precioBase: Number(v.precio ?? 0), cantidad: 1, stock: Number(v.stock ?? 0) }]
     })
   }
   // Producto elegido entre los parecidos o recién creado
@@ -100,8 +100,6 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
   }
   const cambiarCantidad = (id: number, d: number) =>
     setRenglones((rs) => rs.flatMap((r) => (r.variante_id !== id ? [r] : r.cantidad + d <= 0 ? [] : [{ ...r, cantidad: r.cantidad + d }])))
-  const alternarVendedor = (id: number) =>
-    setVendedorIds((vs) => (vs.includes(id) ? vs.filter((x) => x !== id) : [...vs, id]))
 
   async function confirmar() {
     setError('')
@@ -193,6 +191,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
                   <div style={{ fontWeight: 500 }}>{r.descripcion}</div>
                   {!(r.precio > 0) && <div className="small error">Sin precio: escribilo</div>}
                   {r.precio > 0 && r.precioBase > 0 && r.precio !== r.precioBase && <div className="small muted">Lista {pesos(r.precioBase)} · cambiado a mano</div>}
+                  {r.stock < r.cantidad && <div className="small" style={{ color: 'var(--alerta)' }}>Sin stock en el sistema · se vende igual y queda aviso para cargarlo</div>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--borde)' }}>
                   <button aria-label={'Restar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, -1)} style={{ width: 32, height: 32, border: 0, background: '#fff' }}>−</button>
@@ -212,29 +211,36 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
           </div>
 
           <div style={{ padding: '16px 24px', background: 'var(--fondo)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend className="small muted" style={{ marginBottom: 8 }}>Medio de pago</legend>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {medios.map((m) => (
-                  <button key={m.id} type="button" className="chip" aria-pressed={m.id === medioId} onClick={() => setMedioId(m.id)}>{m.nombre}</button>
-                ))}
-              </div>
-            </fieldset>
-            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend className="small muted" style={{ marginBottom: 8 }}>Vendió</legend>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {vendedores.map((v) => (
-                  <button key={v.id} type="button" className="chip" aria-pressed={vendedorIds.includes(v.id)} onClick={() => alternarVendedor(v.id)}>{v.nombre}</button>
-                ))}
-              </div>
-            </fieldset>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <label className="etiqueta" style={{ flex: '1 1 140px' }}>Canal
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <label className="etiqueta">Medio de pago
+                <select className="campo" value={medioId} onChange={(e) => setMedioId(Number(e.target.value))}>
+                  {medios.map((m) => <option key={m.id} value={m.id}>{m.nombre}{m.descuento_pct > 0 ? ` (${m.descuento_pct}% off)` : ''}</option>)}
+                </select>
+              </label>
+              <label className="etiqueta">Canal
                 <select className="campo" value={canalId} onChange={(e) => setCanalId(Number(e.target.value))}>
                   {canales.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </label>
-              <label className="etiqueta" style={{ flex: '2 1 200px' }}>Cliente (opcional)
+              <label className="etiqueta">Vendió
+                <select className="campo" value={vendedorIds[0] ?? ''} onChange={(e) => {
+                  const id = Number(e.target.value)
+                  setVendedorIds((vs) => (id ? [id, ...vs.slice(1).filter((x) => x !== id)] : vs.slice(1)))
+                }}>
+                  <option value="">Elegí…</option>
+                  {vendedores.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+                </select>
+              </label>
+              <label className="etiqueta">Compartida con (opcional)
+                <select className="campo" value={vendedorIds[1] ?? ''} onChange={(e) => {
+                  const id = Number(e.target.value)
+                  setVendedorIds((vs) => (vs[0] ? (id && id !== vs[0] ? [vs[0], id] : [vs[0]]) : vs))
+                }} disabled={!vendedorIds[0]}>
+                  <option value="">Nadie</option>
+                  {vendedores.filter((v) => v.id !== vendedorIds[0]).map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+                </select>
+              </label>
+              <label className="etiqueta" style={{ gridColumn: '1 / -1' }}>Cliente (opcional)
                 <input className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre" />
               </label>
             </div>
@@ -308,21 +314,23 @@ function TarjetaProducto({ producto, onAgregar }: { producto: Producto; onAgrega
             {elegida && Number(elegida.precio) > 0 ? pesos(Number(elegida.precio)) : elegida ? <span className="small" style={{ color: 'var(--alerta)', fontWeight: 500 }}>Sin precio · se escribe en la venta</span> : precios.length ? 'desde ' + pesos(Math.min(...precios)) : 'Sin precio'}
           </div>
         </div>
-        {claves.map((k) => {
-          const valores = [...new Set(producto.variantes.map((v) => (v.atributos ?? {})[k]).filter(Boolean))]
-          return (
-            <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="small muted" style={{ width: 64 }}>{k}</span>
-              {valores.map((val) => (
-                <button key={val} type="button" className="chip" aria-pressed={eleccion[k] === val}
-                  onClick={() => setEleccion((e) => ({ ...e, [k]: val }))}>{val}</button>
-              ))}
-            </div>
-          )
-        })}
+        {claves.length > 0 && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {claves.map((k) => {
+              const valores = [...new Set(producto.variantes.map((v) => (v.atributos ?? {})[k]).filter(Boolean))]
+              return (
+                <label key={k} className="etiqueta" style={{ flex: '1 1 160px' }}>{k}
+                  <select className="campo" value={eleccion[k] ?? ''} onChange={(e) => setEleccion((x) => ({ ...x, [k]: e.target.value }))}>
+                    {valores.map((val) => <option key={val} value={val}>{val}</option>)}
+                  </select>
+                </label>
+              )
+            })}
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span className="small" style={{ color: elegida && elegida.stock > 0 ? 'var(--ok)' : 'var(--apagado)' }}>
-            {!elegida ? 'Esa combinación no existe' : elegida.stock > 0 ? `${elegida.stock} en el local` : 'Stock sin contar'}
+          <span className="small" style={{ color: elegida && elegida.stock > 0 ? 'var(--ok)' : 'var(--alerta)' }}>
+            {!elegida ? 'Esa combinación no existe' : elegida.stock > 0 ? `${elegida.stock} en el local` : 'Sin stock en el sistema · se puede vender igual'}
           </span>
           <button className="boton" type="button" disabled={!elegida}
             title={elegida && !(Number(elegida.precio) > 0) ? 'Sin precio cargado: lo escribís en la venta' : undefined}
