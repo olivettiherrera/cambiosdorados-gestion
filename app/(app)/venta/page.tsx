@@ -4,10 +4,11 @@ import NuevaVenta, { type Opcion, type MedioPago } from './NuevaVenta'
 export default async function PaginaVenta() {
   const supabase = await crearClienteServidor()
   const perfil = await obtenerPerfil()
-  const [canales, medios, vendedores] = await Promise.all([
+  const [canales, medios, vendedores, categorias] = await Promise.all([
     supabase.from('canales').select('id, nombre').order('id'),
     supabase.from('medios_pago').select('id, nombre, descuento_pct, comision_pct').eq('activo', true).order('id'),
     supabase.from('vendedores').select('id, nombre, perfil_id').eq('activo', true).order('id'),
+    supabase.from('categorias').select('id, nombre').order('nombre'),
   ])
 
   // Medios que se usan hoy al vender; el resto queda en "Más".
@@ -24,6 +25,7 @@ export default async function PaginaVenta() {
       medios={listaMedios}
       vendedores={(vendedores.data ?? []).map((v) => ({ id: v.id, nombre: v.nombre }))}
       vendedorInicial={vendedorPropio}
+      categorias={categorias.data ?? []}
     />
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { crearClienteNavegador } from '@/lib/supabase/client'
+import { ProductoNuevo, QuisisteDecir, type FilaParecida } from './ProductoNuevo'
 
 export type Opcion = { id: number; nombre: string }
 export type MedioPago = { id: number; nombre: string; descuento_pct: number; comision_pct: number }
@@ -17,8 +18,8 @@ type Resultado = { numero: string; total_lista: number; descuento: number; total
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
 const descripcionVariante = (a: Record<string, string>) => Object.values(a).join(' · ')
 
-export default function NuevaVenta({ canales, medios, vendedores, vendedorInicial }: {
-  canales: Opcion[]; medios: MedioPago[]; vendedores: Opcion[]; vendedorInicial: number | null
+export default function NuevaVenta({ canales, medios, vendedores, vendedorInicial, categorias }: {
+  canales: Opcion[]; medios: MedioPago[]; vendedores: Opcion[]; vendedorInicial: number | null; categorias: Opcion[]
 }) {
   const supabase = useMemo(() => crearClienteNavegador(), [])
   const [busqueda, setBusqueda] = useState('')
@@ -33,6 +34,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
   const [error, setError] = useState('')
   const [hecho, setHecho] = useState<Resultado | null>(null)
   const buscador = useRef<HTMLInputElement>(null)
+  const [altaNueva, setAltaNueva] = useState<string | null>(null)
 
   // Búsqueda con una pequeña espera mientras se escribe
   useEffect(() => {
@@ -76,6 +78,12 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
       const variante = descripcionVariante(v.atributos)
       return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio), cantidad: 1 }]
     })
+  }
+  // Producto elegido entre los parecidos o recién creado
+  function agregarParecido(f: FilaParecida) {
+    agregar(f as unknown as FilaCatalogo, f.producto)
+    setAltaNueva(null); setBusqueda(''); setProductos([])
+    buscador.current?.focus()
   }
   const cambiarCantidad = (id: number, d: number) =>
     setRenglones((rs) => rs.flatMap((r) => (r.variante_id !== id ? [r] : r.cantidad + d <= 0 ? [] : [{ ...r, cantidad: r.cantidad + d }])))
@@ -127,14 +135,31 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
             <span className="small muted">{buscando ? 'Buscando…' : 'por nombre o código'}</span>
           </label>
 
-          {busqueda.trim().length >= 2 && !buscando && productos.length === 0 && (
-            <div className="panel muted" style={{ padding: 20 }}>No encontré productos con “{busqueda.trim()}”.</div>
-          )}
+          {altaNueva !== null ? (
+            <ProductoNuevo key={altaNueva} nombreInicial={altaNueva} categorias={categorias}
+              onListo={agregarParecido} onCancelar={() => setAltaNueva(null)} />
+          ) : (
+            <>
+              {busqueda.trim().length >= 2 && !buscando && productos.length === 0 && (
+                <div className="panel">
+                  <div style={{ padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                    <span className="muted">No encontré productos con “{busqueda.trim()}”.</span>
+                    <button className="boton" onClick={() => setAltaNueva(busqueda.trim())}>Cargar producto nuevo</button>
+                  </div>
+                  <QuisisteDecir texto={busqueda.trim()} onAgregar={agregarParecido} />
+                </div>
+              )}
 
-          {productos.length > 0 && (
-            <div className="panel">
-              {productos.map((p) => <TarjetaProducto key={p.id} producto={p} onAgregar={agregar} />)}
-            </div>
+              {productos.length > 0 && (
+                <div className="panel">
+                  {productos.map((p) => <TarjetaProducto key={p.id} producto={p} onAgregar={agregar} />)}
+                  <div style={{ padding: '12px 20px', borderTop: '1px solid var(--linea)' }} className="small">
+                    <span className="muted">¿No es ninguno? </span>
+                    <button onClick={() => setAltaNueva(busqueda.trim())} style={{ border: 0, background: 'none', padding: 0, textDecoration: 'underline', color: 'var(--dorado-texto)' }}>Cargar producto nuevo</button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </section>
 
