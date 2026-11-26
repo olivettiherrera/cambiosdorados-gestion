@@ -1,0 +1,36 @@
+:root {
+  --tinta: #2B2B2B;
+  --tinta-suave: #6B6560;
+  --apagado: #8A837B;
+  --dorado: #A18D74;
+  --dorado-texto: #7A6650;
+  --beige: #E0DCD5;
+  --linea: #EFEBE5;
+  --borde: #CFC8BE;
+  --fondo: #F7F5F2;
+  --crema: #FBF8F3;
+  --ok: #3F6B3A;
+  --alerta: #9A5A1E;
+  --error: #9A3B2E;
+  --titulos: 'Gilda Display', Georgia, serif;
+  --texto: 'Instrument Sans', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--fondo); color: var(--tinta); font-family: var(--texto); font-size: 14px; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; font-size: 14px; color: var(--tinta); }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+h1, h2 { font-family: var(--titulos); font-weight: 400; margin: 0; }
+h1 { font-size: 34px; }
+h2 { font-size: 22px; }
+.muted { color: var(--tinta-suave); }
+.small { font-size: 12px; }
+.panel { background: #fff; border: 1px solid var(--beige); }
+.boton { height: 44px; padding: 0 18px; border: 0; background: var(--tinta); color: #fff; font-weight: 500; }
+.boton-sec { padding: 10px 16px; border: 1px solid var(--borde); background: #fff; }
+.chip { padding: 8px 12px; border: 1px solid var(--borde); background: #fff; font-size: 13px; }
+.chip[aria-pressed="true"] { border: 1.5px solid var(--tinta); background: var(--tinta); color: #fff; }
+.campo { height: 40px; border: 1px solid var(--borde); background: #fff; padding: 0 10px; width: 100%; }
+.etiqueta { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--tinta-suave); }
+.oculto { position: absolute; left: -9999px; }

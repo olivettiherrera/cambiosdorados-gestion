@@ -1,4 +1,22 @@
-# Cambios Dorados · Sistema de gestión — Etapa 1 (base de datos y migración)
+# Cambios Dorados · Sistema de gestión
+
+> **MODO PRUEBA.** Las ventas reales se siguen cargando en las planillas. El día que se empiece a usar en serio:
+> se vuelve a correr la migración con las planillas al día, se borran las ventas de prueba (`origen = 'sistema'`)
+> y se pone `NEXT_PUBLIC_MODO_PRUEBA=0` en Vercel.
+
+## App (Next.js + Supabase)
+
+- `app/login`: entrada con mail y contraseña.
+- `app/(app)/venta`: **Nueva venta** — busca en `catalogo`, elige variante, carrito, medio de pago, vendedores y canal;
+  guarda con la función `registrar_venta` (sql/004): número del día, descuento y comisión del medio de pago, baja de stock.
+- Las demás secciones están creadas en el menú y muestran "en construcción".
+- El menú y los permisos dependen del rol (`perfiles.rol`): Gastos, Tablero y Facturación solo para admin.
+
+Variables (ver `.env.example`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_MODO_PRUEBA`.
+
+Local: `npm install && npm run dev`.
+
+## Base de datos y migración
 
 ## Qué hay acá
 
@@ -6,6 +24,7 @@
 | --- | --- |
 | `sql/001_esquema.sql` | Todas las tablas, vistas y permisos. Se corre una vez en Supabase (SQL Editor). |
 | `sql/003_costos_aparte_y_permisos.sql` | Ajuste aplicado después: el costo en su propia tabla y las funciones de permisos en un esquema privado. |
+| `sql/004_registrar_venta.sql` | Función que guarda una venta completa en una transacción. |
 | `sql/002_cargar_migracion.sql` | Carga los CSV de `salida/` en las tablas. Se puede correr de nuevo: borra lo migrado y lo vuelve a cargar. |
 | `sql/000_stub_supabase_local.sql` | Solo para probar en un Postgres local. En Supabase **no** se corre. |
 | `migracion/migrar.py` | Lee las planillas exportadas y genera los CSV limpios. |
