@@ -60,8 +60,9 @@ export default function Pendientes() {
 
   const nombre = (f: Fila) => [f.variantes?.productos?.nombre, ...Object.values(f.variantes?.atributos ?? {})].filter(Boolean).join(' · ')
 
+  if (filas !== null && filas.length === 0 && !error) return null
   return (
-    <section className="panel" aria-label="Para revisar">
+    <section className="panel" aria-label="Para revisar" id="para-revisar">
       <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--linea)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <h2>Para revisar</h2>
         <span className="muted small">Avisos que dejan las ventas · solo los ven Joan y Sele</span>

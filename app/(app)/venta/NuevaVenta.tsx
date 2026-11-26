@@ -186,26 +186,31 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
           <div style={{ padding: '8px 24px' }}>
             {renglones.length === 0 && <div className="muted" style={{ padding: '16px 0' }}>Buscá un producto y agregalo.</div>}
             {renglones.map((r, i) => (
-              <div key={r.variante_id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: i < renglones.length - 1 ? '1px solid var(--linea)' : 0 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 500 }}>{r.descripcion}</div>
-                  {!(r.precio > 0) && <div className="small error">Sin precio: escribilo</div>}
-                  {r.precio > 0 && r.precioBase > 0 && r.precio !== r.precioBase && <div className="small muted">Lista {pesos(r.precioBase)} · cambiado a mano</div>}
-                  {r.stock < r.cantidad && <div className="small" style={{ color: 'var(--alerta)' }}>Sin stock en el sistema · se vende igual y queda aviso para cargarlo</div>}
+              <div key={r.variante_id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 0', borderBottom: i < renglones.length - 1 ? '1px solid var(--linea)' : 0 }}>
+                <div style={{ fontWeight: 500, lineHeight: 1.35 }}>{r.descripcion}</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--borde)' }}>
+                    <button aria-label={'Restar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, -1)} style={{ width: 32, height: 34, border: 0, background: '#fff' }}>−</button>
+                    <span style={{ width: 28, textAlign: 'center' }}>{r.cantidad}</span>
+                    <button aria-label={'Sumar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, 1)} style={{ width: 32, height: 34, border: 0, background: '#fff' }}>+</button>
+                  </div>
+                  <span className="small muted">×</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: `1px solid ${r.precio > 0 ? 'var(--borde)' : 'var(--error)'}`, padding: '0 8px', height: 36, width: 130, background: '#fff' }}
+                    title={r.precioBase > 0 ? `Precio de lista: ${pesos(r.precioBase)}` : 'Este producto no tiene precio cargado'}>
+                    <span className="muted small">$</span>
+                    <input aria-label={'Precio unitario de ' + r.descripcion} inputMode="decimal" placeholder="escribí el precio"
+                      value={r.precio > 0 ? r.precio.toLocaleString('es-AR') : ''} onChange={(e) => cambiarPrecio(r.variante_id, e.target.value)}
+                      style={{ border: 0, outline: 'none', width: '100%', textAlign: 'right', fontWeight: 500, background: 'transparent' }} />
+                  </label>
+                  <div style={{ marginLeft: 'auto', textAlign: 'right', fontWeight: 600 }}>{r.precio > 0 ? pesos(r.precio * r.cantidad) : '—'}</div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--borde)' }}>
-                  <button aria-label={'Restar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, -1)} style={{ width: 32, height: 32, border: 0, background: '#fff' }}>−</button>
-                  <span style={{ width: 28, textAlign: 'center' }}>{r.cantidad}</span>
-                  <button aria-label={'Sumar ' + r.descripcion} onClick={() => cambiarCantidad(r.variante_id, 1)} style={{ width: 32, height: 32, border: 0, background: '#fff' }}>+</button>
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 4, border: `1px solid ${r.precio > 0 ? 'var(--borde)' : 'var(--error)'}`, padding: '0 8px', height: 34, width: 112, background: '#fff' }}
-                  title={r.precioBase > 0 ? `Precio de lista: ${pesos(r.precioBase)}` : 'Este producto no tiene precio cargado'}>
-                  <span className="muted small">$</span>
-                  <input aria-label={'Precio unitario de ' + r.descripcion} inputMode="decimal" placeholder="precio"
-                    value={r.precio > 0 ? r.precio.toLocaleString('es-AR') : ''} onChange={(e) => cambiarPrecio(r.variante_id, e.target.value)}
-                    style={{ border: 0, outline: 'none', width: '100%', textAlign: 'right', fontWeight: 500, background: 'transparent' }} />
-                </label>
-                <div style={{ width: 90, textAlign: 'right', fontWeight: 500 }}>{r.cantidad > 1 ? pesos(r.precio * r.cantidad) : ''}</div>
+                {(!(r.precio > 0) || (r.precioBase > 0 && r.precio !== r.precioBase) || r.stock < r.cantidad) && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {!(r.precio > 0) && <span className="small" style={{ color: 'var(--error)', background: '#FBEFEC', padding: '2px 8px' }}>Sin precio: escribilo</span>}
+                    {r.precio > 0 && r.precioBase > 0 && r.precio !== r.precioBase && <span className="small muted" style={{ background: 'var(--fondo)', padding: '2px 8px' }}>Lista {pesos(r.precioBase)} · cambiado a mano</span>}
+                    {r.stock < r.cantidad && <span className="small" style={{ color: 'var(--alerta)', background: '#FBF5EC', padding: '2px 8px' }} title="Se vende igual; a Joan y Sele les queda el aviso para cargar el stock">Sin stock en el sistema · queda aviso</span>}
+                  </div>
+                )}
               </div>
             ))}
           </div>

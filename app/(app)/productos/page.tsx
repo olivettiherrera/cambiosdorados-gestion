@@ -1,17 +1,15 @@
-import { obtenerPerfil } from '@/lib/supabase/server'
+import { crearClienteServidor, obtenerPerfil } from '@/lib/supabase/server'
 import Pendientes from './Pendientes'
+import Productos from './Productos'
 
 export default async function PaginaProductos() {
   const perfil = await obtenerPerfil()
+  const supabase = await crearClienteServidor()
+  const { data: categorias } = await supabase.from('categorias').select('id, nombre').order('nombre')
+  const esAdmin = perfil?.rol === 'admin'
   return (
     <>
-      <header>
-        <h1>Productos y stock</h1>
-        <div className="muted" style={{ marginTop: 6 }}>El listado completo, variantes, costos y conteo de stock vienen en el próximo paso.</div>
-      </header>
-      {perfil?.rol === 'admin'
-        ? <Pendientes />
-        : <div className="panel" style={{ padding: 24 }}>Esta sección está en construcción.</div>}
+      <Productos esAdmin={esAdmin} categorias={categorias ?? []} avisos={esAdmin ? <Pendientes /> : null} />
     </>
   )
 }
