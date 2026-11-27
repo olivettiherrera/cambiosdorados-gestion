@@ -93,33 +93,33 @@ export default function ListadoVentas({ esAdmin, canales, medios, vendedores }: 
         <button className="boton-sec" onClick={exportar} disabled={!filtradas.length}>Descargar para Excel</button>
       </div>
 
-      <div className="panel" style={{ padding: 16, display: 'grid', gridTemplateColumns: '140px 140px 140px 1fr 1fr 1fr 1.4fr', gap: 12, alignItems: 'end' }}>
-        <label className="etiqueta">Mes
+      <div className="panel filtros" style={{ padding: 16, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'end' }}>
+        <label className="etiqueta" style={{ flex: '0 1 150px' }}>Mes
           <input className="campo" type="month" value={desde.slice(0, 7) === hasta.slice(0, 7) ? desde.slice(0, 7) : ''} onChange={(e) => elegirMes(e.target.value)} />
         </label>
-        <label className="etiqueta">Desde<input className="campo" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></label>
-        <label className="etiqueta">Hasta<input className="campo" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></label>
-        <label className="etiqueta">Canal
+        <label className="etiqueta" style={{ flex: '0 1 150px' }}>Desde<input className="campo" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} /></label>
+        <label className="etiqueta" style={{ flex: '0 1 150px' }}>Hasta<input className="campo" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} /></label>
+        <label className="etiqueta" style={{ flex: '1 1 140px' }}>Canal
           <select className="campo" value={canalId} onChange={(e) => setCanalId(e.target.value)}>
             <option value="">Todos</option>{canales.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </label>
-        <label className="etiqueta">Medio de pago
+        <label className="etiqueta" style={{ flex: '1 1 160px' }}>Medio de pago
           <select className="campo" value={medioId} onChange={(e) => setMedioId(e.target.value)}>
             <option value="">Todos</option>{medios.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </label>
-        <label className="etiqueta">Vendedor
+        <label className="etiqueta" style={{ flex: '1 1 120px' }}>Vendedor
           <select className="campo" value={vendedor} onChange={(e) => setVendedor(e.target.value)}>
             <option value="">Todos</option>{vendedores.map((c) => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
           </select>
         </label>
-        <label className="etiqueta">Buscar
+        <label className="etiqueta" style={{ flex: '2 1 220px' }}>Buscar
           <input className="campo" placeholder="Cliente, producto o número" value={texto} onChange={(e) => setTexto(e.target.value)} />
         </label>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
         <div className="tarjeta"><span className="rotulo">Ventas</span><span className="valor">{totales.cantidad}</span>
           <span className="small muted">Ticket promedio {pesos(totales.cantidad ? totales.total / totales.cantidad : 0)}</span></div>
         <div className="tarjeta"><span className="rotulo">Facturable</span><span className="valor">{pesos(totales.total)}</span>
@@ -141,34 +141,33 @@ export default function ListadoVentas({ esAdmin, canales, medios, vendedores }: 
       </div>
 
       <div className="panel" style={{ overflow: 'auto', maxHeight: '62vh' }}>
-        <table className="tabla">
+        <table className="tabla" style={{ minWidth: 820 }}>
           <colgroup>
-            <col style={{ width: 92 }} /><col style={{ width: 110 }} /><col style={{ width: 130 }} />
-            <col style={{ width: 300 }} /><col style={{ width: 170 }} /><col style={{ width: 110 }} />
-            <col style={{ width: 110 }} /><col style={{ width: 100 }} /><col style={{ width: 110 }} />
-            {esAdmin && <col style={{ width: 80 }} />}
+            <col style={{ width: 92 }} /><col style={{ width: '24%' }} /><col />
+            <col style={{ width: '15%' }} /><col style={{ width: 115 }} /><col style={{ width: 115 }} />
+            {esAdmin && <col style={{ width: 76 }} />}
           </colgroup>
           <thead><tr>
-            <th>Fecha</th><th>Canal</th><th>Cliente</th><th>Productos</th><th>Medio</th><th>Vendedor</th>
-            <th className="num">Cobrado</th><th className="num">Comisión</th><th className="num">Entró</th>
+            <th>Fecha</th><th>Cliente</th><th>Productos</th><th>Medio</th>
+            <th className="num">Cobrado</th><th className="num">Entró</th>
             {esAdmin && <th>Factura</th>}
           </tr></thead>
           <tbody>
             {visibles.map((v) => (
               <tr key={v.id} className={v.estado === 'anulada' ? 'anulada' : ''} onClick={() => setAbierta(v)}>
-                <td title={v.numero}>{fechaCorta(v.dia)}</td>
-                <td>{v.canal ?? '—'}</td>
-                <td title={v.cliente ?? ''}>{v.cliente || <span className="muted">—</span>}</td>
+                <td title={v.numero}>{fechaCorta(v.dia)}<div className="small muted">{horaCordoba(v.fecha)}</div></td>
+                <td title={v.cliente ?? ''}>
+                  {v.cliente || <span className="muted">Sin nombre</span>}
+                  <div className="small muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{[v.canal, v.vendedores].filter(Boolean).join(' · ') || '—'}</div>
+                </td>
                 <td title={v.productos ?? ''}>{v.productos ?? '—'}</td>
                 <td title={v.medios ?? ''}>{v.medios ?? '—'}</td>
-                <td>{v.vendedores ?? '—'}</td>
-                <td className="num">{pesos(v.total)}</td>
-                <td className="num muted">{Number(v.comision) ? pesos(v.comision) : '—'}</td>
-                <td className="num">{pesos(v.neto)}</td>
+                <td className="num" style={{ fontWeight: 500 }}>{pesos(v.total)}</td>
+                <td className="num">{pesos(v.neto)}{Number(v.comision) > 0 && <div className="small muted">− {pesos(v.comision)}</div>}</td>
                 {esAdmin && <td>{v.facturada ? <span className="etiqueta-estado" style={{ color: 'var(--ok)' }}>Sí</span> : <span className="muted small">No</span>}</td>}
               </tr>
             ))}
-            {!cargando && !visibles.length && <tr><td colSpan={10} className="muted" style={{ padding: 24, textAlign: 'center' }}>No hay ventas con estos filtros.</td></tr>}
+            {!cargando && !visibles.length && <tr><td colSpan={7} className="muted" style={{ padding: 24, textAlign: 'center' }}>No hay ventas con estos filtros.</td></tr>}
           </tbody>
         </table>
       </div>

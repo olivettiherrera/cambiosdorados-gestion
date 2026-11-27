@@ -1,7 +1,7 @@
 -- 010 — Clientes: fichas, resumen de compras y vinculación con las ventas históricas (que tienen el nombre escrito a mano).
 
 create or replace function privado.clave_cliente(t text) returns text
-language sql immutable as $$ select nullif(btrim(regexp_replace(privado.normalizar(coalesce(t, '')), '\s+', ' ', 'g')), '') $$;
+language sql immutable set search_path = '' as $$ select nullif(btrim(regexp_replace(privado.normalizar(coalesce(t, '')), '\s+', ' ', 'g')), '') $$;
 grant execute on function privado.clave_cliente(text) to authenticated;
 
 -- Resumen por ficha
@@ -25,9 +25,9 @@ revoke all on clientes_resumen, clientes_sin_ficha from anon;
 grant select on clientes_resumen, clientes_sin_ficha to authenticated;
 
 -- Crear o editar ficha: {"id"?, "nombre", "doc_tipo", "doc_nro", "condicion_iva", "email", "telefono", "lista_precio", "domicilio", "notas", "vincular": "texto"}
--- Cualquiera crea; editar y vincular ventas viejas, solo admin.
+-- Cualquiera crea; editar y vincular ventas viejas, solo admin (RLS de clientes y ventas).
 create or replace function public.guardar_cliente(p jsonb)
-returns bigint language plpgsql security definer set search_path = public as $$
+returns bigint language plpgsql security invoker set search_path = public as $$
 declare v_id bigint := nullif(p->>'id', '')::bigint; v_nombre text := btrim(coalesce(p->>'nombre', ''));
 begin
   if not privado.es_usuario() then raise exception 'Usuario sin permiso'; end if;

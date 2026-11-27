@@ -59,15 +59,18 @@ export default function CajaDelDia() {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <h1>Caja del día</h1>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1>Caja del día</h1>
+          <div className="muted" style={{ marginTop: 6 }}>{new Date(dia + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input className="campo" type="date" value={dia} max={hoyCordoba()} onChange={(e) => e.target.value && setDia(e.target.value)} style={{ width: 160 }} />
           {!esHoy && <button className="boton-sec" onClick={() => setDia(hoyCordoba())}>Hoy</button>}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 380px)', gap: 24, alignItems: 'start' }} className="grilla-venta">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="panel">
             <table className="tabla" style={{ tableLayout: 'auto' }}>
@@ -91,7 +94,8 @@ export default function CajaDelDia() {
             </table>
           </div>
 
-          <div className="panel" style={{ maxHeight: 360, overflow: 'auto' }}>
+          <div className="panel" style={{ overflow: 'auto' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--linea)' }}><h2 style={{ fontSize: 18 }}>Ventas del día</h2></div>
             <table className="tabla">
               <colgroup><col style={{ width: 64 }} /><col style={{ width: 130 }} /><col /><col style={{ width: 150 }} /><col style={{ width: 110 }} /></colgroup>
               <thead><tr><th>Hora</th><th>Cliente</th><th>Productos</th><th>Medio</th><th className="num">Cobrado</th></tr></thead>
@@ -107,7 +111,7 @@ export default function CajaDelDia() {
           </div>
         </div>
 
-        <div className="panel" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <section aria-label="Cobro" className="panel" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, position: 'sticky', top: 16 }}>
           <h2>Efectivo</h2>
           {cierre ? (
             <>
@@ -146,7 +150,7 @@ export default function CajaDelDia() {
             </>
           )}
           {error && <div className="small error">{error}</div>}
-        </div>
+        </section>
       </div>
     </>
   )

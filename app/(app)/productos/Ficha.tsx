@@ -107,7 +107,7 @@ export default function Ficha({ fila, info, hermanas, esAdmin, costo, categorias
   const descVariante = textoVariante(fila.atributos)
 
   return (
-    <aside aria-label="Detalle del producto" className="panel" style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
+    <aside aria-label="Detalle del producto" className="panel ficha-producto" style={{ minWidth: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
       <div style={{ ...bloque, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div className="small muted">{fila.producto} · {fila.codigo}</div>

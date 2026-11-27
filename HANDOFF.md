@@ -26,7 +26,14 @@ Gastos, Tablero y Facturación son solo admin (RLS + menú).
 - Nueva venta con **desplegables** (medio de pago, canal, vendió, compartida con, variantes) en vez de botones.
 - **Productos y stock** (`app/(app)/productos`): listado agrupado por producto con variantes, buscador, categoría y filtros (sin stock, debajo del mínimo, sin precio, sin costo, a revisar), exportar CSV. Ficha lateral: costo × margen = precio (redondeado a 900), regla si cambia el costo, mínimo, datos de la variante, ajustar stock, historial de movimientos, variantes del producto, agregar variante, nombre/categoría/"a revisar". **Modo conteo** (escribir cuántos hay al lado de cada uno → `contar_stock`) e **Ingresar mercadería** (`ingresar_mercaderia`; el costo solo lo graba admin y con "mantener margen" recalcula el precio). Funciones en sql/009. Contar o ingresar cierra los avisos "sin stock"; cargar precio cierra los "sin precio" (trigger).
 - Hoy los 513 productos tienen una sola variante cada uno (los colores vienen como productos separados, ej. "Almohadón Tejido - Verde"); agruparlos es el paso de revisión de duplicados.
-- SQL en `sql/001`…`009` (todo aplicado en Supabase).
+- **Clientes** (`app/(app)/clientes`, sql/010): fichas (DNI/CUIT, condición IVA, lista de precios, contacto), compras por cliente, y "Nombres de ventas viejas" (vista `clientes_sin_ficha`, agrupa `ventas.cliente_texto`): un admin crea la ficha y `guardar_cliente` vincula esas ventas. En Nueva venta el campo Cliente sugiere las fichas y manda `cliente_id`.
+- **Gastos** (solo admin, sql/011): por mes, tarjetas por grupo (sin contar retiros en el total), filtros, alta/edición/borrado (`guardar_egreso` crea el proveedor si no existe). Para gastos nuevos no se ofrece "Cuenta Joan (extra)" (CHO EXTRA no va al sistema).
+- **Tablero** (solo admin, sql/012 `tablero(desde, hasta)`): vendido, entró, gastos, resultado, retiros, ticket promedio; gráfico por mes (entró vs gastos), por canal, medio, vendedora, gastos que más pesan, productos más vendidos, ventas sin facturar.
+- **Facturación** (solo admin, sql/013 + `lib/arca.ts` + `app/api/facturar`): ventas por facturar con selección (máx. 40 por tanda), emisor Joan PV 2 / Sele PV 8, confirmación y emisión de Factura C vía Afip SDK; receptor según la ficha del cliente (CUIT+condición, DNI, o consumidor final; controla dígito del CUIT y el tope de CF anónimo). Antiduplicados: `reservar_factura` deja la factura en "verificar" antes de llamar a ARCA (índice único por venta); si la respuesta se pierde consulta `FECompConsultar`; si no puede confirmar queda "Verificar en ARCA" y corta la tanda. "Ya la hice" marca una venta facturada a mano. **Por defecto en modo prueba** (homologación, CUIT de prueba de Afip SDK, no guarda nada). No se probó contra ARCA real.
+  - Para facturar de verdad, en Vercel › Settings › Environment Variables: `AFIPSDK_TOKEN`, `ARCA_AMBIENTE=prod`, `ARCA_CERT_<CUIT>` y `ARCA_KEY_<CUIT>` de Joan y de Sele (los mismos que tiene el Facturador en Propiedades del script; PEM, los saltos de línea pueden ir como `\n`). Opcional `ARCA_LIMITE_CF`. Primero probar en modo prueba con el token solo.
+  - Falta: PDF de la factura (el Facturador lo arma con CAE y QR) y consulta de padrón por CUIT.
+- UI: Nueva venta con la venta a lo ancho y el cobro fijo a la derecha; Ventas, Caja y Productos reacomodados (filtros que se acomodan, ficha de producto al costado; en pantallas angostas pasa a panel encima).
+- SQL en `sql/001`…`013` (todo aplicado en Supabase).
 
 ## Pendiente de Joan
 - Supabase › Authentication › URL Configuration: Site URL `https://cambiosdorados-gestion.vercel.app`, Redirect `https://cambiosdorados-gestion.vercel.app/**`.
@@ -34,10 +41,10 @@ Gastos, Tablero y Facturación son solo admin (RLS + menú).
 - Probar una venta, un producto nuevo y un cierre de caja.
 
 ## Próximos pasos
-1. **Rediseño de la UI** (Joan la ve fea): llevar todas las pantallas al look de los mockups del canvas "Sistema Cambios Dorados — Mockups escritorio" (https://claude.ai/artifact/6hGXHmjrcNCjon4Mpmce58). Después: agrupar productos sueltos como variantes (revisión con IA de duplicados).
-2. **Facturación** en la app (portar la lógica del Facturador: afipsdk, Factura C, CondicionIVAReceptorId, padrón por CUIT), siempre con botón manual.
-3. **Clientes**.
-4. **Gastos** (+ bot de Telegram) y **Tablero** — solo Joan y Sele.
+1. Revisar con Joan cómo se ven las pantallas (no se pudieron ver con usuario logueado) y ajustar al look de los mockups (https://claude.ai/artifact/6hGXHmjrcNCjon4Mpmce58).
+2. Facturación real: cargar las variables en Vercel, probar en homologación, después una factura real chica. Sumar PDF con QR y padrón por CUIT.
+3. Agrupar productos sueltos como variantes (revisión de duplicados).
+4. Bot de Telegram para gastos (cargan `confirmado = false`; Gastos ya muestra "revisar").
 5. Sincronizar stock con Tiendanube (app de Socio Tecnológico; su plan no tiene API propia).
 6. Versión celular, "olvidé mi contraseña", exportación automática a Sheets.
 

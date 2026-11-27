@@ -24,7 +24,7 @@ create trigger cerrar_sin_precio after update of precio on variantes for each ro
 
 -- Redondeo de precios: el número terminado en 900 más cercano (42.960 -> 42.900; 46.800 -> 46.900).
 create or replace function privado.redondear_900(x numeric) returns numeric
-language sql immutable as $$ select greatest(900, round((x - 900) / 1000) * 1000 + 900) $$;
+language sql immutable set search_path = '' as $$ select greatest(900, round((x - 900) / 1000) * 1000 + 900) $$;
 grant execute on function privado.redondear_900(numeric) to authenticated;
 
 -- Conteo: [{"variante_id": 10, "contado": 4}, ...], "nota": "..."

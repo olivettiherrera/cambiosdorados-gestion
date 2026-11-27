@@ -188,8 +188,8 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
-        <section aria-label="Lista de productos" className="panel" style={{ flex: '3 1 720px', minWidth: 0, overflowX: 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: filaElegida && !contando ? 'minmax(0, 1fr) 380px' : 'minmax(0, 1fr)', gap: 24, alignItems: 'start' }} className="grilla-productos">
+        <section aria-label="Lista de productos" className="panel" style={{ minWidth: 0, overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 680 }}>
             <thead>
               <tr style={{ textAlign: 'left', color: 'var(--tinta-suave)', fontSize: 12, borderBottom: '1px solid var(--beige)', background: 'var(--crema)' }}>
