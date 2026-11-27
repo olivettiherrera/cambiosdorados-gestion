@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { crearClienteNavegador } from '@/lib/supabase/client'
+import { Miniatura } from '../productos/Foto'
 import { ProductoNuevo, QuisisteDecir, type FilaParecida } from './ProductoNuevo'
 
 export type Opcion = { id: number; nombre: string }
@@ -9,10 +10,10 @@ export type MedioPago = { id: number; nombre: string; descuento_pct: number; com
 
 type FilaCatalogo = {
   producto_id: number; producto: string; categoria: string | null; en_web: boolean
-  variante_id: number; codigo: string; atributos: Record<string, string>; precio: number | null; stock: number
+  variante_id: number; codigo: string; atributos: Record<string, string>; precio: number | null; stock: number; foto_url?: string | null
 }
 type Producto = { id: number; nombre: string; categoria: string | null; en_web: boolean; variantes: FilaCatalogo[] }
-type Renglon = { variante_id: number; descripcion: string; precio: number; precioBase: number; cantidad: number; stock: number }
+type Renglon = { variante_id: number; descripcion: string; precio: number; precioBase: number; cantidad: number; stock: number; foto?: string | null }
 type Resultado = { numero: string; total_lista: number; descuento: number; total: number; comision: number; neto: number }
 
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
@@ -54,7 +55,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
       const patron = `%${q.replace(/[%_,()]/g, ' ')}%`
       const { data } = await supabase
         .from('catalogo')
-        .select('producto_id, producto, categoria, en_web, variante_id, codigo, atributos, precio, stock')
+        .select('producto_id, producto, categoria, en_web, variante_id, codigo, atributos, precio, stock, foto_url')
         .eq('activo', true)
         .or(`producto.ilike.${patron},codigo.ilike.${patron}`)
         .order('producto')
@@ -89,7 +90,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
       const i = rs.findIndex((r) => r.variante_id === v.variante_id)
       if (i >= 0) return rs.map((r, j) => (j === i ? { ...r, cantidad: r.cantidad + 1 } : r))
       const variante = descripcionVariante(v.atributos)
-      return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio ?? 0), precioBase: Number(v.precio ?? 0), cantidad: 1, stock: Number(v.stock ?? 0) }]
+      return [...rs, { variante_id: v.variante_id, descripcion: nombre + (variante ? ' · ' + variante : ''), precio: Number(v.precio ?? 0), precioBase: Number(v.precio ?? 0), cantidad: 1, stock: Number(v.stock ?? 0), foto: v.foto_url ?? null }]
     })
   }
   // Producto elegido entre los parecidos o recién creado
@@ -213,7 +214,10 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
                   {renglones.map((r) => (
                     <tr key={r.variante_id} style={{ borderTop: '1px solid var(--linea)' }}>
                       <td style={{ ...celda, paddingLeft: 20 }}>
-                        <div style={{ fontWeight: 500, lineHeight: 1.35 }}>{r.descripcion}</div>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <Miniatura url={r.foto} tam={40} />
+                          <div style={{ fontWeight: 500, lineHeight: 1.35 }}>{r.descripcion}</div>
+                        </div>
                         {(!(r.precio > 0) || (r.precioBase > 0 && r.precio !== r.precioBase) || r.stock < r.cantidad) && (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                             {!(r.precio > 0) && <span className="small" style={{ color: 'var(--error)', background: '#FBEFEC', padding: '2px 8px' }}>Sin precio: escribilo</span>}
@@ -344,7 +348,8 @@ function TarjetaProducto({ producto, onAgregar }: { producto: Producto; onAgrega
   const precios = producto.variantes.map((v) => Number(v.precio)).filter((n) => n > 0)
 
   return (
-    <div style={{ padding: 20, display: 'flex', gap: 20, borderBottom: '1px solid var(--linea)' }}>
+    <div style={{ padding: 20, display: 'flex', gap: 16, borderBottom: '1px solid var(--linea)' }}>
+      <Miniatura url={(elegida ?? producto.variantes[0])?.foto_url} tam={72} alt={producto.nombre} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>

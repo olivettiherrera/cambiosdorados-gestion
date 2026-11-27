@@ -1,7 +1,7 @@
 export type FilaCatalogo = {
   producto_id: number; producto_codigo: string; producto: string; categoria: string | null; en_web: boolean
   variante_id: number; codigo: string; atributos: Record<string, string>; precio: number | null
-  stock_minimo: number; activo: boolean; stock: number
+  stock_minimo: number; activo: boolean; stock: number; foto_url?: string | null
 }
 export type InfoProducto = { id: number; nombre: string; categoria_id: number | null; revisar: boolean }
 export type Opcion = { id: number; nombre: string }

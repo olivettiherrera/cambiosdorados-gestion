@@ -8,8 +8,9 @@ import { type FilaCatalogo, type InfoProducto, type Opcion, textoVariante, leerN
 import Ficha from './Ficha'
 import Ingreso from './Ingreso'
 import Agrupar from './Agrupar'
+import { Miniatura } from './Foto'
 
-type Filtro = 'todos' | 'sin_stock' | 'bajo_minimo' | 'sin_precio' | 'sin_costo' | 'revisar'
+type Filtro = 'todos' | 'sin_stock' | 'bajo_minimo' | 'sin_precio' | 'sin_costo' | 'sin_foto' | 'revisar'
 type Grupo = { id: number; codigo: string; nombre: string; categoria: string | null; revisar: boolean; variantes: FilaCatalogo[] }
 
 const POR_PAGINA = 150
@@ -34,7 +35,7 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
 
   const cargar = useCallback(async () => {
     const [cat, prods, cos] = await Promise.all([
-      supabase.from('catalogo').select('producto_id, producto_codigo, producto, categoria, en_web, variante_id, codigo, atributos, precio, stock_minimo, activo, stock').order('producto').order('codigo').limit(5000),
+      supabase.from('catalogo').select('producto_id, producto_codigo, producto, categoria, en_web, variante_id, codigo, atributos, precio, stock_minimo, activo, stock, foto_url').order('producto').order('codigo').limit(5000),
       supabase.from('productos').select('id, nombre, categoria_id, revisar').eq('activo', true).limit(5000),
       esAdmin ? supabase.from('costos_variante').select('variante_id, costo').limit(10000) : Promise.resolve({ data: [], error: null }),
     ])
@@ -52,6 +53,7 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
       case 'bajo_minimo': return v.activo && v.stock_minimo > 0 && v.stock < v.stock_minimo
       case 'sin_precio': return v.activo && !(Number(v.precio) > 0)
       case 'sin_costo': return v.activo && !costos.has(v.variante_id)
+      case 'sin_foto': return v.activo && !v.foto_url
       default: return true
     }
   }, [filtro, costos])
@@ -117,6 +119,7 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
   const chips: [Filtro, string][] = [
     ['todos', 'Todos'], ['sin_stock', 'Sin stock'], ['bajo_minimo', 'Debajo del mínimo'], ['sin_precio', `Sin precio (${totales.sinPrecio})`],
     ...(esAdmin ? [['sin_costo', `Sin costo cargado (${totales.sinCosto})`] as [Filtro, string]] : []),
+    ['sin_foto', 'Sin foto'],
     ['revisar', 'A revisar'],
   ]
 
@@ -219,9 +222,14 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
                 return [
                   <tr key={'g' + g.id} onClick={() => alternar(g.id)} style={{ background: abierto ? 'var(--fondo)' : undefined, borderBottom: '1px solid var(--linea)', cursor: 'pointer' }}>
                     <td style={{ padding: '12px 16px' }}>
-                      <button type="button" aria-expanded={abierto} onClick={(e) => { e.stopPropagation(); alternar(g.id) }}
-                        style={{ border: 0, background: 'none', padding: 0, fontWeight: 600, fontSize: 14, textAlign: 'left' }}>{abierto ? '▾' : '▸'} {g.nombre}</button>
-                      <div className="small muted">{[g.categoria, `${g.variantes.length} variantes`, g.revisar ? 'a revisar' : null].filter(Boolean).join(' · ')}</div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <Miniatura url={g.variantes.find((v) => v.foto_url)?.foto_url} tam={36} />
+                        <div>
+                          <button type="button" aria-expanded={abierto} onClick={(e) => { e.stopPropagation(); alternar(g.id) }}
+                            style={{ border: 0, background: 'none', padding: 0, fontWeight: 600, fontSize: 14, textAlign: 'left' }}>{abierto ? '▾' : '▸'} {g.nombre}</button>
+                          <div className="small muted">{[g.categoria, `${g.variantes.length} variantes`, g.revisar ? 'a revisar' : null].filter(Boolean).join(' · ')}</div>
+                        </div>
+                      </div>
                     </td>
                     <td style={{ padding: '12px 8px' }} className="muted">{g.codigo}</td>
                     {esAdmin && <td />}{esAdmin && <td />}<td />
@@ -265,9 +273,14 @@ function FilaVariante({ v, titulo, sub, sangria, esAdmin, costo, elegida, onEleg
     <tr onClick={() => !contando && onElegir(v.variante_id)}
       style={{ borderBottom: '1px solid var(--linea)', cursor: contando ? 'default' : 'pointer', color: v.activo ? undefined : 'var(--apagado)',
         background: elegida ? 'var(--crema)' : undefined, outline: elegida ? '1.5px solid var(--dorado)' : undefined, outlineOffset: -1.5 }}>
-      <td style={{ padding: sangria ? '10px 16px 10px 36px' : '12px 16px' }}>
-        <div style={{ fontWeight: sangria ? (elegida ? 500 : 400) : 600, fontSize: sangria ? 13 : 14 }}>{titulo}</div>
-        {!sangria && (textoVariante(v.atributos) || sub) && <div className="small muted">{[textoVariante(v.atributos), sub].filter(Boolean).join(' · ')}</div>}
+      <td style={{ padding: sangria ? '8px 16px 8px 36px' : '10px 16px' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <Miniatura url={v.foto_url} tam={sangria ? 28 : 36} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: sangria ? (elegida ? 500 : 400) : 600, fontSize: sangria ? 13 : 14 }}>{titulo}</div>
+            {!sangria && (textoVariante(v.atributos) || sub) && <div className="small muted">{[textoVariante(v.atributos), sub].filter(Boolean).join(' · ')}</div>}
+          </div>
+        </div>
       </td>
       <td style={{ padding: '10px 8px' }} className="muted">{v.codigo}</td>
       {esAdmin && (

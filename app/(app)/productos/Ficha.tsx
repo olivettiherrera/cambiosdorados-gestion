@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { crearClienteNavegador } from '@/lib/supabase/client'
 import { pesos, fechaCorta, horaCordoba } from '@/lib/formato'
+import Foto from './Foto'
 import { type FilaCatalogo, type InfoProducto, type Opcion, textoVariante, leerNumero, redondear900, MOTIVOS } from './comun'
 
 type Movimiento = { fecha: string; motivo: string; cantidad: number; nota: string | null; usuario: string | null; venta: string | null }
@@ -121,6 +122,11 @@ export default function Ficha({ fila, info, hermanas, esAdmin, costo, categorias
           {error || mensaje}
         </div>
       )}
+
+      <div style={bloque}>
+        <Foto varianteId={fila.variante_id} url={fila.foto_url ?? null} tieneVariantes={hermanas.length > 1} esAdmin={esAdmin}
+          alt={fila.producto + (descVariante ? ' · ' + descVariante : '')} onCambio={onCambio} />
+      </div>
 
       <div style={bloque}>
         <div style={rotulo}>Precio</div>
