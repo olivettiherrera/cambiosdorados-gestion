@@ -37,7 +37,8 @@ Gastos, Tablero y Facturación son solo admin (RLS + menú).
 - **Unir variantes** (Productos › Unir variantes, sql/014 `agrupar_variantes`): sugiere grupos de productos sueltos por el nombre antes de " - " (105 grupos, 345 productos), con los datos (Color, Medida, Aroma…) pre-completados y editables. Los productos con nombre idéntico (ej. "Pie de cama/ manta - Arena" ×3) perdieron un dato en la migración: hay que completarlo antes de unir. No borra nada: mueve las variantes al producto de código más bajo y deja los otros inactivos.
 - **Celular**: menú desplegable arriba, pantallas en una columna, campos de 16px (sin zoom en iPhone).
 - **Comprobante PDF** (`/facturacion/[id]`, sql/015): Factura C imprimible con CAE y QR de ARCA ("Guardar como PDF" del navegador). Los datos del emisor (razón social, domicilio, IIBB, inicio de actividades) se cargan en Facturación › Datos para el comprobante.
-- SQL en `sql/001`…`015` (todo aplicado en Supabase).
+- **Fotos de productos** (sql/016): bucket público `fotos` de Supabase Storage; `productos.foto_url` (general) y `variantes.foto_url` (solo esa variante); `catalogo.foto_url` devuelve la que corresponda. Se suben desde la ficha (en el celular abre la cámara; se achican a 1200 px JPEG) con `poner_foto`; suben todos, quitar solo admin. Miniaturas en Productos (filtro "Sin foto") y en Nueva venta. Idea: traer las fotos de Tiendanube emparejando por nombre.
+- SQL en `sql/001`…`016` (todo aplicado en Supabase).
 
 ## Pendiente de Joan
 - Supabase › Authentication › URL Configuration: Site URL `https://cambiosdorados-gestion.vercel.app`, Redirect `https://cambiosdorados-gestion.vercel.app/**`.
