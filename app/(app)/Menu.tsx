@@ -1,11 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SECCIONES } from './secciones'
 
 export default function Menu({ nombre, rol, avisos = 0 }: { nombre: string; rol: 'admin' | 'vendedor'; avisos?: number }) {
   const ruta = usePathname()
+  const [abierto, setAbierto] = useState(false)
+  useEffect(() => { setAbierto(false) }, [ruta])
   const visibles = SECCIONES.filter((s) => !s.soloAdmin || rol === 'admin')
   const generales = visibles.filter((s) => !['gastos', 'tablero'].includes(s.ruta))
   const privadas = visibles.filter((s) => ['gastos', 'tablero'].includes(s.ruta))
@@ -27,8 +30,22 @@ export default function Menu({ nombre, rol, avisos = 0 }: { nombre: string; rol:
     )
   }
 
+  const actual = SECCIONES.find((s) => ruta === '/' + s.ruta)?.nombre ?? ''
   return (
-    <nav aria-label="Menú principal" style={{ flex: '0 0 230px', background: 'var(--tinta)', color: 'var(--fondo)', display: 'flex', flexDirection: 'column', padding: '28px 0', minHeight: '100vh' }}>
+    <>
+    {/* Celular: barra arriba con botón de menú */}
+    <div className="barra-movil">
+      <button aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={abierto} onClick={() => setAbierto((a) => !a)}
+        style={{ background: 'none', border: 0, color: '#fff', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          {abierto ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+        </svg>
+      </button>
+      <span style={{ fontFamily: 'var(--titulos)', fontSize: 18 }}>{actual || 'Cambios Dorados'}</span>
+      {avisos > 0 ? <Link href="/productos" aria-label={avisos + ' para revisar'} style={{ background: 'var(--dorado)', color: 'var(--tinta)', borderRadius: 10, padding: '1px 8px', fontSize: 12, fontWeight: 600 }}>{avisos}</Link> : <span style={{ width: 44 }} />}
+    </div>
+    {abierto && <div className="velo-menu" onClick={() => setAbierto(false)} aria-hidden="true" />}
+    <nav aria-label="Menú principal" className={'menu-lateral' + (abierto ? ' abierto' : '')} style={{ flex: '0 0 230px', background: 'var(--tinta)', color: 'var(--fondo)', display: 'flex', flexDirection: 'column', padding: '28px 0', minHeight: '100vh' }}>
       <div style={{ padding: '0 24px 28px', borderBottom: '1px solid #45423F' }}>
         <div style={{ fontFamily: 'var(--titulos)', fontSize: 22 }}>Cambios Dorados</div>
         <div style={{ fontSize: 12, color: '#C9C2B8', marginTop: 4 }}>Sistema de gestión</div>
@@ -54,5 +71,6 @@ export default function Menu({ nombre, rol, avisos = 0 }: { nombre: string; rol:
         </div>
       </div>
     </nav>
+    </>
   )
 }

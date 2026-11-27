@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { crearClienteNavegador } from '@/lib/supabase/client'
 import { pesos, hoyCordoba } from '@/lib/formato'
 
@@ -153,14 +153,22 @@ function Lista({ titulo, filas, total, extra, nota }: { titulo: string; filas: F
   )
 }
 
-function GraficoMeses({ meses }: { meses: Mes[] }) {
+export function GraficoMeses({ meses }: { meses: Mes[] }) {
   const [hover, setHover] = useState<number | null>(null)
   const [tabla, setTabla] = useState(false)
-  const alto = 220, izq = 64, abajo = 28
+  const caja = useRef<HTMLDivElement>(null)
+  const [disponible, setDisponible] = useState(800)
+  useEffect(() => {
+    if (!caja.current) return
+    const ro = new ResizeObserver(([e]) => setDisponible(Math.floor(e.contentRect.width)))
+    ro.observe(caja.current)
+    return () => ro.disconnect()
+  }, [tabla])
+  const alto = 240, izq = 64, abajo = 28
   const max = Math.max(1, ...meses.flatMap((m) => [Number(m.neto), Number(m.gastos)]))
   const paso = 10 ** Math.floor(Math.log10(max)); const tope = Math.ceil(max / paso) * paso
   const marcas = [0, 0.25, 0.5, 0.75, 1].map((f) => f * tope)
-  const ancho = Math.max(560, meses.length * 70)
+  const ancho = Math.max(disponible, meses.length * 56)
   const col = (ancho - izq) / Math.max(meses.length, 1)
   const barra = Math.min(26, col * 0.3)
   const y = (v: number) => alto - abajo - (v / tope) * (alto - abajo - 10)
@@ -181,9 +189,9 @@ function GraficoMeses({ meses }: { meses: Mes[] }) {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} ref={caja}>
       <div style={{ overflowX: 'auto' }}>
-        <svg width={ancho} height={alto} role="img" aria-label="Gráfico de barras: lo que entró y los gastos de cada mes" style={{ display: 'block', minWidth: '100%' }}>
+        <svg width={ancho} height={alto} role="img" aria-label="Gráfico de barras: lo que entró y los gastos de cada mes" style={{ display: 'block' }}>
           {marcas.map((v) => (
             <g key={v}>
               <line x1={izq} x2={ancho} y1={y(v)} y2={y(v)} stroke="#EFEBE5" />

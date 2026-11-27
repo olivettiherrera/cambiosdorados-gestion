@@ -7,6 +7,7 @@ import { ProductoNuevo, type FilaParecida } from '../venta/ProductoNuevo'
 import { type FilaCatalogo, type InfoProducto, type Opcion, textoVariante, leerNumero, margenTexto } from './comun'
 import Ficha from './Ficha'
 import Ingreso from './Ingreso'
+import Agrupar from './Agrupar'
 
 type Filtro = 'todos' | 'sin_stock' | 'bajo_minimo' | 'sin_precio' | 'sin_costo' | 'revisar'
 type Grupo = { id: number; codigo: string; nombre: string; categoria: string | null; revisar: boolean; variantes: FilaCatalogo[] }
@@ -24,7 +25,7 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
   const [categoria, setCategoria] = useState('')
   const [abiertos, setAbiertos] = useState<Set<number>>(new Set())
   const [elegida, setElegida] = useState<number | null>(null)
-  const [panel, setPanel] = useState<'nada' | 'nuevo' | 'ingreso'>('nada')
+  const [panel, setPanel] = useState<'nada' | 'nuevo' | 'ingreso' | 'agrupar'>('nada')
   const [contando, setContando] = useState(false)
   const [conteo, setConteo] = useState<Record<number, string>>({})
   const [guardandoConteo, setGuardandoConteo] = useState(false)
@@ -133,6 +134,7 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
           <button className="boton-sec" aria-pressed={contando} onClick={() => { setContando((c) => !c); setConteo({}); setPanel('nada') }}
             style={contando ? { borderColor: 'var(--tinta)', fontWeight: 600 } : undefined}>{contando ? 'Salir del conteo' : 'Contar stock'}</button>
           <button className="boton-sec" onClick={() => { setPanel('ingreso'); setContando(false); setElegida(null) }}>Ingresar mercadería</button>
+          {esAdmin && <button className="boton-sec" onClick={() => { setPanel('agrupar'); setContando(false); setElegida(null) }}>Unir variantes</button>}
           {esAdmin && <button className="boton" style={{ height: 'auto', padding: '10px 16px' }} onClick={() => { setPanel('nuevo'); setContando(false); setElegida(null) }}>Nuevo producto</button>}
         </div>
       </header>
@@ -154,6 +156,9 @@ export default function Productos({ esAdmin, categorias, avisos }: { esAdmin: bo
             await supabase.from('productos').update({ revisar: false }).eq('id', f.producto_id)
             setPanel('nada'); await cargar(); setBusqueda(f.producto); setElegida(f.variante_id)
           }} />
+      )}
+      {panel === 'agrupar' && filas && (
+        <Agrupar filas={filas} onCerrar={() => setPanel('nada')} onListo={(texto) => { setAviso(texto); cargar() }} />
       )}
       {panel === 'ingreso' && filas && (
         <Ingreso filas={filas} esAdmin={esAdmin} costos={costos} onCerrar={() => setPanel('nada')}

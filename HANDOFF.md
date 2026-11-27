@@ -31,9 +31,13 @@ Gastos, Tablero y Facturación son solo admin (RLS + menú).
 - **Tablero** (solo admin, sql/012 `tablero(desde, hasta)`): vendido, entró, gastos, resultado, retiros, ticket promedio; gráfico por mes (entró vs gastos), por canal, medio, vendedora, gastos que más pesan, productos más vendidos, ventas sin facturar.
 - **Facturación** (solo admin, sql/013 + `lib/arca.ts` + `app/api/facturar`): ventas por facturar con selección (máx. 40 por tanda), emisor Joan PV 2 / Sele PV 8, confirmación y emisión de Factura C vía Afip SDK; receptor según la ficha del cliente (CUIT+condición, DNI, o consumidor final; controla dígito del CUIT y el tope de CF anónimo). Antiduplicados: `reservar_factura` deja la factura en "verificar" antes de llamar a ARCA (índice único por venta); si la respuesta se pierde consulta `FECompConsultar`; si no puede confirmar queda "Verificar en ARCA" y corta la tanda. "Ya la hice" marca una venta facturada a mano. **Por defecto en modo prueba** (homologación, CUIT de prueba de Afip SDK, no guarda nada). No se probó contra ARCA real.
   - Para facturar de verdad, en Vercel › Settings › Environment Variables: `AFIPSDK_TOKEN`, `ARCA_AMBIENTE=prod`, `ARCA_CERT_<CUIT>` y `ARCA_KEY_<CUIT>` de Joan y de Sele (los mismos que tiene el Facturador en Propiedades del script; PEM, los saltos de línea pueden ir como `\n`). Opcional `ARCA_LIMITE_CF`. Primero probar en modo prueba con el token solo.
-  - Falta: PDF de la factura (el Facturador lo arma con CAE y QR) y consulta de padrón por CUIT.
+  - Falta: consulta de padrón por CUIT (requiere autorizar "Constancia de Inscripción" en el Administrador de Relaciones de ARCA).
 - UI: Nueva venta con la venta a lo ancho y el cobro fijo a la derecha; Ventas, Caja y Productos reacomodados (filtros que se acomodan, ficha de producto al costado; en pantallas angostas pasa a panel encima).
-- SQL en `sql/001`…`013` (todo aplicado en Supabase).
+- **Olvidé mi contraseña** en el login: manda el mail de Supabase con link a `/auth/confirmar` → `/nueva-clave`. Necesita que en Supabase › Authentication › URL Configuration esté la Redirect URL `https://cambiosdorados-gestion.vercel.app/**`.
+- **Unir variantes** (Productos › Unir variantes, sql/014 `agrupar_variantes`): sugiere grupos de productos sueltos por el nombre antes de " - " (105 grupos, 345 productos), con los datos (Color, Medida, Aroma…) pre-completados y editables. Los productos con nombre idéntico (ej. "Pie de cama/ manta - Arena" ×3) perdieron un dato en la migración: hay que completarlo antes de unir. No borra nada: mueve las variantes al producto de código más bajo y deja los otros inactivos.
+- **Celular**: menú desplegable arriba, pantallas en una columna, campos de 16px (sin zoom en iPhone).
+- **Comprobante PDF** (`/facturacion/[id]`, sql/015): Factura C imprimible con CAE y QR de ARCA ("Guardar como PDF" del navegador). Los datos del emisor (razón social, domicilio, IIBB, inicio de actividades) se cargan en Facturación › Datos para el comprobante.
+- SQL en `sql/001`…`015` (todo aplicado en Supabase).
 
 ## Pendiente de Joan
 - Supabase › Authentication › URL Configuration: Site URL `https://cambiosdorados-gestion.vercel.app`, Redirect `https://cambiosdorados-gestion.vercel.app/**`.
@@ -42,11 +46,11 @@ Gastos, Tablero y Facturación son solo admin (RLS + menú).
 
 ## Próximos pasos
 1. Revisar con Joan cómo se ven las pantallas (no se pudieron ver con usuario logueado) y ajustar al look de los mockups (https://claude.ai/artifact/6hGXHmjrcNCjon4Mpmce58).
-2. Facturación real: cargar las variables en Vercel, probar en homologación, después una factura real chica. Sumar PDF con QR y padrón por CUIT.
-3. Agrupar productos sueltos como variantes (revisión de duplicados).
-4. Bot de Telegram para gastos (cargan `confirmado = false`; Gastos ya muestra "revisar").
+2. Facturación real: cargar las variables en Vercel, probar en homologación, después una factura real chica. Padrón por CUIT.
+3. Unir las variantes sugeridas (lo hace Joan desde Productos; los de nombre repetido necesitan el dato que falta).
+4. Bot de Telegram para gastos (necesita el token del bot; cargan `confirmado = false`; Gastos ya muestra "revisar").
 5. Sincronizar stock con Tiendanube (app de Socio Tecnológico; su plan no tiene API propia).
-6. Versión celular, "olvidé mi contraseña", exportación automática a Sheets.
+6. Exportación automática a Sheets (necesita una cuenta de servicio de Google).
 
 ## Reglas
 - No pegar contraseñas ni claves en el chat.

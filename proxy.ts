@@ -20,7 +20,8 @@ export async function proxy(request: NextRequest) {
   )
   const { data: { user } } = await supabase.auth.getUser()
   const enLogin = request.nextUrl.pathname.startsWith('/login')
-  if (!user && !enLogin) {
+  const publico = request.nextUrl.pathname.startsWith('/auth/confirmar')
+  if (!user && !enLogin && !publico) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

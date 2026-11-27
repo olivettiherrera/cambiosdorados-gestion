@@ -10,6 +10,7 @@ type Factura = { id: number; venta_id: number | null; emisor: string; tipo: numb
 type Resultado = { venta_id: number; numero_venta: string; estado: 'ok' | 'error' | 'verificar' | 'salteada'; detalle: string; factura?: string }
 
 const MAX = 40
+type DatosEmisor = { id: number; nombre: string; razon_social: string | null; domicilio: string | null; condicion_iva: string | null; ingresos_brutos: string | null; inicio_actividades: string | null }
 const mesAtras = () => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10) }
 const nroFactura = (f: Pick<Factura, 'punto_venta' | 'numero'>) => (f.numero ? `${String(f.punto_venta).padStart(5, '0')}-${String(f.numero).padStart(8, '0')}` : 'sin número')
 const ESTADOS: Record<string, [string, string]> = { ok: ['Emitida', 'var(--ok)'], error: ['Rechazada', 'var(--error)'], verificar: ['Verificar en ARCA', 'var(--alerta)'], salteada: ['No se facturó', 'var(--tinta-suave)'] }
@@ -28,6 +29,22 @@ export default function Facturacion({ emisores, emisorInicial, ambiente }: { emi
   const [resultados, setResultados] = useState<Resultado[] | null>(null)
   const [manual, setManual] = useState<{ venta: PorFacturar; numero: string; emisor: string } | null>(null)
   const [error, setError] = useState('')
+  const [datos, setDatos] = useState<DatosEmisor[] | null>(null)
+
+  async function abrirDatos() {
+    const { data } = await supabase.from('emisores').select('id, nombre, razon_social, domicilio, condicion_iva, ingresos_brutos, inicio_actividades').order('id')
+    setDatos((data ?? []) as DatosEmisor[])
+  }
+  async function guardarDatos() {
+    if (!datos) return
+    for (const d of datos) {
+      const { id, nombre: _n, ...resto } = d
+      void _n
+      const { error } = await supabase.from('emisores').update({ ...resto, inicio_actividades: resto.inicio_actividades || null }).eq('id', id)
+      if (error) return setError('No se pudieron guardar los datos: ' + error.message)
+    }
+    setDatos(null)
+  }
 
   const cargar = useCallback(async () => {
     setError('')
@@ -87,6 +104,7 @@ export default function Facturacion({ emisores, emisorInicial, ambiente }: { emi
           <div className="muted" style={{ marginTop: 6 }}>Factura C · siempre con botón, nunca automática</div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="boton-sec" onClick={abrirDatos}>Datos para el comprobante</button>
           <label className="etiqueta" style={{ flexDirection: 'row', alignItems: 'center' }}>Desde
             <input className="campo" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={{ width: 150 }} />
           </label>
@@ -206,7 +224,10 @@ export default function Facturacion({ emisores, emisorInicial, ambiente }: { emi
                   <td>C {nroFactura(f)}</td>
                   <td className="muted">{f.receptor_nombre ?? f.cliente ?? 'Consumidor final'}{f.venta_numero && <span className="small"> · {f.venta_numero}</span>}</td>
                   <td className="num">{pesos(f.importe)}</td>
-                  <td className="muted">{f.cae ?? '—'}{f.pdf_url && <> · <a href={f.pdf_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>PDF</a></>}</td>
+                  <td className="muted">{f.cae ?? '—'}
+                    {f.pdf_url ? <> · <a href={f.pdf_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>PDF</a></>
+                      : f.cae && f.estado === 'ok' ? <> · <a href={`/facturacion/${f.id}`} style={{ textDecoration: 'underline' }}>Ver / PDF</a></> : null}
+                  </td>
                   <td title={f.mensaje ?? ''} style={{ whiteSpace: 'normal' }}>
                     <span style={{ color: ESTADOS[f.estado][1], fontWeight: 500 }}>{ESTADOS[f.estado][0]}</span>
                     {f.estado === 'verificar' && (
@@ -222,6 +243,32 @@ export default function Facturacion({ emisores, emisorInicial, ambiente }: { emi
             </tbody>
           </table>
         </section>
+      )}
+
+      {datos && (
+        <aside className="lateral" aria-label="Datos para el comprobante">
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <h2>Datos para el comprobante</h2>
+            <button aria-label="Cerrar" onClick={() => setDatos(null)} style={{ border: 0, background: 'none', fontSize: 22, padding: 4 }}>×</button>
+          </div>
+          <div className="small muted">Son los datos de quien factura que salen impresos en el PDF (los mismos de la constancia de ARCA).</div>
+          {datos.map((d, i) => {
+            const cambiar = (k: keyof DatosEmisor, v: string) => setDatos((ds) => ds && ds.map((x, j) => (j === i ? { ...x, [k]: v } : x)))
+            return (
+              <fieldset key={d.id} style={{ border: '1px solid var(--beige)', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <legend style={{ fontWeight: 600, padding: '0 6px' }}>{d.nombre}</legend>
+                <label className="etiqueta">Razón social (nombre como figura en ARCA)<input className="campo" value={d.razon_social ?? ''} onChange={(e) => cambiar('razon_social', e.target.value)} /></label>
+                <label className="etiqueta">Domicilio comercial<input className="campo" value={d.domicilio ?? ''} onChange={(e) => cambiar('domicilio', e.target.value)} /></label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <label className="etiqueta">Condición frente al IVA<input className="campo" value={d.condicion_iva ?? ''} onChange={(e) => cambiar('condicion_iva', e.target.value)} /></label>
+                  <label className="etiqueta">Ingresos brutos<input className="campo" value={d.ingresos_brutos ?? ''} placeholder="si está vacío, el CUIT" onChange={(e) => cambiar('ingresos_brutos', e.target.value)} /></label>
+                  <label className="etiqueta">Inicio de actividades<input className="campo" type="date" value={d.inicio_actividades ?? ''} onChange={(e) => cambiar('inicio_actividades', e.target.value)} /></label>
+                </div>
+              </fieldset>
+            )
+          })}
+          <button className="boton" onClick={guardarDatos}>Guardar</button>
+        </aside>
       )}
 
       {manual && (

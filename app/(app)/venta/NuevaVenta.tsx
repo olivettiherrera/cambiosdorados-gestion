@@ -154,12 +154,12 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
           <div style={{ position: 'relative' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', border: '1px solid var(--borde)', padding: '0 16px', height: 52 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2" aria-hidden="true" style={{ flex: 'none' }}><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
               <span className="oculto">Buscar producto</span>
               <input ref={buscador} autoFocus value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
                 onKeyDown={(e) => e.key === 'Escape' && setBusqueda('')}
                 placeholder="Buscá un producto: florero, difusor, 000412…" style={{ flex: 1, border: 0, outline: 'none', fontSize: 16, background: 'transparent' }} />
-              <span className="small muted">{buscando ? 'Buscando…' : 'por nombre o código'}</span>
+              <span className="small muted solo-escritorio">{buscando ? 'Buscando…' : 'por nombre o código'}</span>
             </label>
 
             {hayResultados && !buscando && (
@@ -190,7 +190,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
               onListo={agregarParecido} onCancelar={() => setAltaNueva(null)} />
           )}
 
-          <section aria-label="Productos de la venta" className="panel">
+          <section aria-label="Productos de la venta" className="panel" style={{ overflowX: 'auto' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--linea)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <h2>Venta en curso</h2>
               <span className="muted" style={{ fontSize: 13 }}>{unidades} {unidades === 1 ? 'producto' : 'productos'}</span>
@@ -200,7 +200,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
                 Todavía no hay productos. Buscalos arriba y tocá <b>Agregar a la venta</b>.
               </div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 540 }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: 'var(--tinta-suave)', fontSize: 12 }}>
                     <th style={{ ...celda, paddingLeft: 20, fontWeight: 500 }}>Producto</th>
@@ -312,7 +312,7 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
               <span style={{ fontWeight: 600, fontSize: 16 }}>Total</span>
               <label style={{ display: 'flex', alignItems: 'baseline', gap: 4, borderBottom: '1px dashed var(--borde)' }} title="Podés escribir el total a mano">
                 <span style={{ fontFamily: 'var(--titulos)', fontSize: 30 }}>$</span>
-                <input aria-label="Total a cobrar (se puede escribir a mano)" inputMode="numeric"
+                <input aria-label="Total a cobrar (se puede escribir a mano)" className="total-grande" inputMode="numeric"
                   value={totalManual ? totalManualNum.toLocaleString('es-AR') : Math.round(totalCalculado).toLocaleString('es-AR')}
                   onChange={(e) => setTotalManual(e.target.value.replace(/\D/g, ''))}
                   style={{ border: 0, outline: 'none', background: 'transparent', fontFamily: 'var(--titulos)', fontSize: 30, textAlign: 'right', width: 170 }} />
