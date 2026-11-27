@@ -78,8 +78,8 @@ begin
     from ventas where numero like to_char(v_hoy, 'YYYYMMDD') || '-%';
   v_numero := to_char(v_hoy, 'YYYYMMDD') || '-' || lpad(v_seq::text, 4, '0');
 
-  insert into ventas (numero, fecha, canal_id, cliente_texto, total_lista, total, origen, observacion, creado_por)
-  values (v_numero, now(), (p->>'canal_id')::bigint, nullif(p->>'cliente_texto', ''), v_lista, v_total,
+  insert into ventas (numero, fecha, canal_id, cliente_id, cliente_texto, total_lista, total, origen, observacion, creado_por)
+  values (v_numero, now(), (p->>'canal_id')::bigint, nullif(p->>'cliente_id', '')::bigint, nullif(p->>'cliente_texto', ''), v_lista, v_total,
           'sistema',
           nullif(concat_ws(' · ', nullif(p->>'observacion', ''),
                  case when v_ajuste <> 0 then 'Redondeo ' || case when v_ajuste > 0 then '+' else '' end || round(v_ajuste)::text end), ''),

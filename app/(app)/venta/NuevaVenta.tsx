@@ -18,8 +18,8 @@ type Resultado = { numero: string; total_lista: number; descuento: number; total
 const pesos = (n: number) => '$ ' + Math.round(n).toLocaleString('es-AR')
 const descripcionVariante = (a: Record<string, string>) => Object.values(a).join(' · ')
 
-export default function NuevaVenta({ canales, medios, vendedores, vendedorInicial, categorias }: {
-  canales: Opcion[]; medios: MedioPago[]; vendedores: Opcion[]; vendedorInicial: number | null; categorias: Opcion[]
+export default function NuevaVenta({ canales, medios, vendedores, vendedorInicial, categorias, clientes = [] }: {
+  canales: Opcion[]; medios: MedioPago[]; vendedores: Opcion[]; vendedorInicial: number | null; categorias: Opcion[]; clientes?: Opcion[]
 }) {
   const supabase = useMemo(() => crearClienteNavegador(), [])
   const [busqueda, setBusqueda] = useState('')
@@ -110,7 +110,8 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
     setGuardando(true)
     const { data, error } = await supabase.rpc('registrar_venta', {
       p: {
-        canal_id: canalId, medio_pago_id: medioId, cliente_texto: cliente.trim() || null, vendedor_ids: vendedorIds,
+        canal_id: canalId, medio_pago_id: medioId, cliente_texto: cliente.trim() || null,
+        cliente_id: clientes.find((c) => c.nombre.toLowerCase() === cliente.trim().toLowerCase())?.id ?? null, vendedor_ids: vendedorIds,
         items: renglones.map((r) => ({ variante_id: r.variante_id, cantidad: r.cantidad, ...(r.precio !== r.precioBase ? { precio: r.precio } : {}) })),
         ...(totalManual ? { total_final: totalManualNum } : {}),
       },
@@ -281,7 +282,8 @@ export default function NuevaVenta({ canales, medios, vendedores, vendedorInicia
               </select>
             </label>
             <label className="etiqueta">Cliente (opcional)
-              <input className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre" />
+              <input className="campo" value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nombre" list="lista-clientes" />
+              <datalist id="lista-clientes">{clientes.map((c) => <option key={c.id} value={c.nombre} />)}</datalist>
             </label>
           </div>
 
